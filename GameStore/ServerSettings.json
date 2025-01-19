@@ -1,18 +1,16 @@
 {
-    "ServerSettings": {
-        "GameMode": "Ranked",
-        "AntiCheatBootStrapperEnabled": true,
-        "AntiCheatBootStrapperAutoUpdate": true,
-        "AntiCheatEnabled": true,
-        "ChromiumWatchEnabled": true,
-        "MaxPlayerPing": 170,
-        "MaxSpectatorCount": 5,
-        "AllowPlayerSwaping": false,
-        "AnalyticsLogging": false,
-        "ServerLocation": "null-island",
-        "ServerType": "Beta",
-        "LowestAllowedServerFramerate": 50,
-        "MaximumAllowedRam(MB)": 2048,
-        "GameAutoUpdatesEnabled": false
-    }
+    "GameMode": "Ranked",
+    "AntiCheatBootStrapperEnabled": true,
+    "AntiCheatBootStrapperAutoUpdate": true,
+    "AntiCheatEnabled": true,
+    "ChromiumWatchEnabled": true,
+    "MaxPlayerPing": 170,
+    "MaxSpectatorCount": 5,
+    "AllowPlayerSwaping": false,
+    "AnalyticsLogging": false,
+    "ServerLocation": "null-island",
+    "ServerType": "Beta",
+    "LowestAllowedServerFramerate": 50,
+    "MaximumAllowedRam(MB)": 2048,
+    "GameAutoUpdatesEnabled": false
 }
