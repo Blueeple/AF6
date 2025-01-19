@@ -23,25 +23,10 @@ local GameplayProviderModule = require(ServerModules.GameplayProvider)
 local PlayersManager = require(ServerModules.PlayerManager)
 local Utilities = require(SharedModules.Utility)
 
-local CanPlayerVote = false
-local CmdrActivated = false
-
-local PlayersVoted = {}
-
-local function fetchData(url)
-    local success, response = pcall(function()
-        return HttpService:GetAsync(url)
-    end)
-
-    if success then
-        return response
-    else
-        return response
-    end
-end
-
 Players.PlayerAdded:Once(function(player)--Should totaly check if a client fired the vote difficulty event.
     Utilities:Print("Starting game.")
+
+    local GameStore_ServerSettings = DynamicStoreFetcher:Get("ServerSettings.json")
 
     CmdrModule:RegisterDefaultCommands()
     CmdrModule:RegisterCommandsIn(CmdrCommandsFolder)
@@ -54,9 +39,9 @@ Players.PlayerAdded:Once(function(player)--Should totaly check if a client fired
         end
     end
 
-    local GameLobby = GameplayProviderModule.newLobby()
-
-    --local w = DynamicStoreFetcher:Get("ItemShop")
+    local GameLobby = GameplayProviderModule.StartLobby({
+        StoreKey = GameStore_ServerSettings
+    })
 end)
 
 Players.PlayerAdded:Connect(function(Player : Player)

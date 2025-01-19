@@ -8,20 +8,19 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
-local ReplicatedAssetsFolder = ReplicatedStorage:WaitForChild("Assets")
+local ReplicatedAssetsFolder = ReplicatedStorage:WaitForChild("ReplicatedAssets")
 local ControlsFolder = ReplicatedStorage:WaitForChild("Controls")
 local NetworkFolder = ReplicatedStorage:WaitForChild("Network")
 local ControlTemplates = ControlsFolder:WaitForChild("Templates")
 local ControlInterfaces = ControlsFolder:WaitForChild("Interfaces")
 local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 local SoundGroupFolder = SoundService:FindFirstChild("SoundGroups")
-local NetworkRemotes = NetworkFolder.Remotes
 
 local Cmdr = require(ControlsFolder.Modules:WaitForChild("CmdrClient"))
 local Promise = require(SharedModules.Promise)
 local Utilities = require(SharedModules.Utility)
 
-local VoteForRankedMapEvent = NetworkRemotes:WaitForChild("VoteRankedMap")
+local VoteForRankedMapEvent = NetworkFolder.RemoteEvents:WaitForChild("VoteRankedMap")
 
 Cmdr:SetActivationKeys({Enum.KeyCode.F2})
 
@@ -41,7 +40,7 @@ local function FadeOutSounds(...: boolean)
 end
 
 --User expirence [Beta]
-UserInputService.WindowFocusReleased:Connect(function()
+--[[UserInputService.WindowFocusReleased:Connect(function()
     Utilities:Print("Window focus left.")
     FadeOutSounds(true)
 end)
@@ -50,3 +49,4 @@ UserInputService.WindowFocused:Connect(function()
     Utilities:Print("Window focus back.")
     FadeOutSounds(false)
 end)
+]]

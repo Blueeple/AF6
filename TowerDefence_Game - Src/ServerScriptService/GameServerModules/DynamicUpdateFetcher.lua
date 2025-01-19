@@ -1,11 +1,11 @@
 local HttpService = game:GetService("HttpService")
 
 local githubUsername = "Blueeple"
-local repoName = "Tower-Defence-Game-V3"
+local repoName = "Battle-Grounds-Game"
 local branch = "main"
-local filePath = "DynamicFetchStore/ItemShop/"
+local filePath = "GameStore/"
 
-local accessToken = "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"
+local accessToken = "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"
 
 local headers = {
     ["Authorization"] = "Bearer " .. accessToken
@@ -16,7 +16,7 @@ local DynamicStoreFetcher = {}
 function DynamicStoreFetcher:Get(...)
     if not typeof(...) == "string" then return nil end
 
-    local rawFileUrl = string.format("https://raw.githubusercontent.com/%s/%s/%s/%s%s%s", githubUsername, repoName, branch, filePath .. ... .. ".json", "?cache_bust=",tostring(os.time()))
+    local rawFileUrl = string.format("https://raw.githubusercontent.com/%s/%s/%s/%s", githubUsername, repoName, branch, filePath .. ...)
     local success, response = pcall(function()
         return HttpService:GetAsync(rawFileUrl, true, headers)
     end)

@@ -39,6 +39,8 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
 
     local DynamicStore = args["StoreKey"]
 
+    warn(DynamicStore)
+
     local VoteRankedMaps = RemoteManager.new({
         Name = "VoteRankedMap",
         Parent = NetworkFolder.RemoteEvents,

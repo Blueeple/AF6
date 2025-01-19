@@ -87,7 +87,7 @@ function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, 
     local FallOffTime = args["FallOffTime"]
     local Parent = args["Parent"]
 
-    local SerializedName = Utilities:GenerateGUIDName(0, 30, true)
+    local SerializedName = Name or Utilities:GenerateGUIDName(0, 30, true)
     local EventBind = Instance.new("BindableEvent")
 
     --Dynamic variables
@@ -107,7 +107,7 @@ function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, 
 
     Utilities:Print({"Creating new safe remote for: ", SerializedName})
 
-    EventBind.Name = Name or Utilities:GenerateGUIDName(0, 50, true)
+    EventBind.Name = SerializedName
 
     if RemoteType == "Event" then
         newRemote = Instance.new("RemoteEvent", Parent)

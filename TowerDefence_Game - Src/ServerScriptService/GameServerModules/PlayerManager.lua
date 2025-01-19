@@ -49,7 +49,7 @@ function PlayerManager.new(...: Player)
         SetupCharacter(Character)
         SetupHumanoid(Humanoid)
 
-        Character.Parent = workspace.Players
+        Character.Parent = workspace.PlayersFolder
 
         Humanoid.Died:Once(function()
             task.wait(0.5)
