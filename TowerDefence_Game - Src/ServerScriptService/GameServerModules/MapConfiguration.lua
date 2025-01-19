@@ -1,12 +1,11 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 
 local Utilities = require(SharedModules.Utility)
-
-local MapFolder = ServerStorage.Maps
 
 local MapModule = {}
 MapModule.__index = MapModule
@@ -58,7 +57,7 @@ function MapModule:ScanForMaps(Configurations : table)
 
     Utilities:Print("Beggining map scanning.")
 
-    for Index, Map in pairs(MapFolder:GetChildren()) do
+    for Index, Map in pairs(Configurations["MapFolder"]:GetChildren()) do
         if Map:IsA("Folder") then
             SafeCheckMap(Map)
         end

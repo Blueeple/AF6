@@ -10,7 +10,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local NetworkFolder = ReplicatedStorage:FindFirstChild("Network")
-local ServerModules = ServerScriptService:FindFirstChild("Modules")
+local ServerModules = ServerScriptService:FindFirstChild("GameServerModules")
 local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 
 local CmdrHooksFolder = ServerModules.Hooks

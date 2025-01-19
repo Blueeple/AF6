@@ -76,10 +76,11 @@ local function HandleRemote(Player: Player, SerializedName: string, EventBind: B
 end
 
 --Creates a new Remote event.
-function RemoteManager.new(...: {Parent: any, Activated: boolean, RemoteType: string, DebouceTime: string, FallOffTime: number, AllowedTypes: {}})
+function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, RemoteType: string, DebouceTime: string, FallOffTime: number, AllowedTypes: {}})
     local args = ...
 
     --Fixed variables
+    local Name = args["Name"]
     local RemoteType = args["RemoteType"]
     local AllowedTypes = args["AllowedTypes"]
     local DebouceTime = args["DebouceTime"]
@@ -106,7 +107,7 @@ function RemoteManager.new(...: {Parent: any, Activated: boolean, RemoteType: st
 
     Utilities:Print({"Creating new safe remote for: ", SerializedName})
 
-    EventBind.Name = Utilities:GenerateGUIDName(0, 50, true)
+    EventBind.Name = Name or Utilities:GenerateGUIDName(0, 50, true)
 
     if RemoteType == "Event" then
         newRemote = Instance.new("RemoteEvent", Parent)
