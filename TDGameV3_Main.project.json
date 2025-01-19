@@ -1,0 +1,37 @@
+{
+  "name": "Tower Defence Game - V3 [Main]",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$path": "TowerDefence_Game - Src/ReplicatedStorage"
+    },
+
+    "ReplicatedFirst": {
+      "$path": "TowerDefence_Game - Src/ReplicatedFirst"
+    },
+
+    "ServerScriptService": {
+        "$path": "TowerDefence_Game - Src/ServerScriptService"
+    },
+    
+    "ServerStorage": {
+      "$path": "TowerDefence_Game - Src/ServerStorage"
+    },
+
+    "StarterGui": {
+      "$path": "TowerDefence_Game - Src/StarterGui"
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "$path": "TowerDefence_Game - Src/StarterPlayerScripts"
+      }
+    },
+    "SoundService": {
+      "$properties": {
+        "RespectFilteringEnabled": true
+      }
+    }
+  }
+}
