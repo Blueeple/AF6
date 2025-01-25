@@ -1,6 +1,9 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local ServerStorage = game:GetService("ServerStorage")
 
+local ServerModules = ServerScriptService:FindFirstChild("GameServerModules")
 local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 
 local Utilities = require(SharedModules.Utility)
@@ -14,6 +17,8 @@ local function GenerateNewUserColor()
 end
 
 local function SetupCharacter(Character: Model)
+    local Player = Players:GetPlayerFromCharacter(Character)
+
     if Character then
         for index, BasePart in pairs(Character:GetDescendants()) do
             if BasePart:IsA("BasePart") then
@@ -21,6 +26,8 @@ local function SetupCharacter(Character: Model)
             end
         end
     end
+
+    PlayerManager.Players[Player.UserId]["CanUseMove"] = true
 end
 
 local function SetupHumanoid(Humanoid: Humanoid)
@@ -29,41 +36,59 @@ local function SetupHumanoid(Humanoid: Humanoid)
     Humanoid.NameOcclusion = Enum.NameOcclusion.NoOcclusion
 end
 
-function PlayerManager.new(...: Player)
-    local newPlayer = ...
+local function SetPlayerValue(Player: Player, Name: string, Value: any)
+    local PlayerId = Player.UserId
+    PlayerManager.Players[PlayerId][Name] = Value
+end
+
+function PlayerManager.new(Player: Player)
     local UserColor = GenerateNewUserColor()
 
-    Utilities:Print({"Indexing new player for:", newPlayer.Name})
+    Utilities:Print({"Indexing new player for:", Player.Name})
 
     local PlayerConfigurations = {
-        Name = newPlayer.Name,
+        Name = Player.Name,
         UserColor = UserColor,
-        EquipedTowers = {},
+        MoveSet = "PlaceHolder",
+        CanUseMove = false,
     }
 
-    PlayerManager.Players[newPlayer.UserId] = PlayerConfigurations
+    PlayerManager.Players[Player.UserId] = PlayerConfigurations
+    
+    SetPlayerValue(Player, "MoveSet", "Test")
 
-    local PlayerConnection = newPlayer.CharacterAdded:Connect(function(Character: Model)
+    local PlayerConnection = Player.CharacterAdded:Connect(function(Character: Model)
+        local PlayerData = PlayerManager.Players[Player.UserId]
         local Humanoid = Character:FindFirstChildOfClass("Humanoid")
 
         SetupCharacter(Character)
         SetupHumanoid(Humanoid)
+        SetPlayerValue(Player, "CanUseMove", true)
 
         Character.Parent = workspace.PlayersFolder
 
         Humanoid.Died:Once(function()
+            SetPlayerValue(Player, "CanUseMove", false)
             task.wait(0.5)
-            newPlayer:LoadCharacter()
+            Player:LoadCharacter()
         end)
     end)
 
-    newPlayer.Destroying:Once(function()
+    Player.Destroying:Once(function()
         PlayerConnection:Disconnect()
     end)
 
-    newPlayer:LoadCharacter()
+    Player:LoadCharacter()
 
     return setmetatable(PlayerConfigurations, PlayerManager)
+end
+
+function PlayerManager:ReadPlayer(Player: Player)
+    if PlayerManager.Players[Player.UserId] ~= nil then
+        return PlayerManager.Players[Player.UserId]
+    else
+        Utilities:Warn({"No player found for name:", tostring(Player)})
+    end
 end
 
 function PlayerManager:AllPlayers()

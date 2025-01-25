@@ -51,13 +51,13 @@ local function SearchMap(SearchParams : table)
     }
 end
 
-function MapModule:ScanForMaps(Configurations : table)
+function MapModule:ScanForMaps(Configurations : table, MapFolder: Folder)
     local MapData = {}
     local SearchParams = {}
 
     Utilities:Print("Beggining map scanning.")
 
-    for Index, Map in pairs(Configurations["MapFolder"]:GetChildren()) do
+    for Index, Map in pairs(MapFolder:GetChildren()) do
         if Map:IsA("Folder") then
             SafeCheckMap(Map)
         end

@@ -11,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedAssetsFolder = ReplicatedStorage:WaitForChild("ReplicatedAssets")
 local ControlsFolder = ReplicatedStorage:WaitForChild("Controls")
 local NetworkFolder = ReplicatedStorage:WaitForChild("Network")
+local ControlModules = ControlsFolder:WaitForChild("Modules")
 local ControlTemplates = ControlsFolder:WaitForChild("Templates")
 local ControlInterfaces = ControlsFolder:WaitForChild("Interfaces")
 local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
@@ -18,9 +19,14 @@ local SoundGroupFolder = SoundService:FindFirstChild("SoundGroups")
 
 local Cmdr = require(ControlsFolder.Modules:WaitForChild("CmdrClient"))
 local Promise = require(SharedModules.Promise)
+local InputTransulator = require(ControlModules.InputTransulator)
+local MoveSetController = require(ControlsFolder.Modules:WaitForChild("MoveSetController"))
 local Utilities = require(SharedModules.Utility)
 
-local VoteForRankedMapEvent = NetworkFolder.RemoteEvents:WaitForChild("VoteRankedMap")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer.PlayerGui
+
+local VoteForRankedMapEvent:RemoteEvent = NetworkFolder.RemoteEvents:WaitForChild("VoteRankedMap")
 
 Cmdr:SetActivationKeys({Enum.KeyCode.F2})
 
@@ -50,3 +56,30 @@ UserInputService.WindowFocused:Connect(function()
     FadeOutSounds(false)
 end)
 ]]
+
+VoteForRankedMapEvent.OnClientEvent:Connect(function(Data: table)
+    local MainUX = PlayerGui:WaitForChild("MainGameUX")
+
+    if Data ~= true and Data["Task"] == "Create" then
+        local VotingUiTemplate = ControlTemplates:WaitForChild("Template_RankedMapVote")
+        local VotingUI = ControlInterfaces:WaitForChild("VoteSystem"):Clone()
+        VotingUI.Parent = MainUX
+
+        for MapName, Settings in pairs(Data["Maps"]) do
+            local newTemplate = VotingUiTemplate:Clone()
+            newTemplate.Name = MapName
+            newTemplate.MapName.Text = MapName
+
+            newTemplate.Parent = VotingUI
+
+            newTemplate.VoteMap.Activated:Connect(function()
+                VoteForRankedMapEvent:FireServer(MapName)
+            end)
+        end
+    else
+        if MainUX["VoteSystem"] ~= nil then
+            MainUX["VoteSystem"]:Destroy()
+            MoveSetController:Initialize()
+        end
+    end
+end)

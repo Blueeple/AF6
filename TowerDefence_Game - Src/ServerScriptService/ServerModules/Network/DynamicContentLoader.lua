@@ -1,4 +1,5 @@
 local HttpService = game:GetService("HttpService")
+local MessagingService = game:GetService("MessagingService")
 
 local githubUsername = "Blueeple"
 local repoName = "Battle-Grounds-Game"
@@ -14,7 +15,7 @@ local headers = {
 local DynamicStoreFetcher = {}
 
 function DynamicStoreFetcher:Get(...)
-    if not typeof(...) == "string" then return nil end
+    if typeof(...) ~= "string" then return nil end
 
     local rawFileUrl = string.format("https://raw.githubusercontent.com/%s/%s/%s/%s", githubUsername, repoName, branch, filePath .. ...)
     local success, response = pcall(function()

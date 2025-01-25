@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -54,11 +55,20 @@ local function HandleRemote(Player: Player, SerializedName: string, EventBind: B
     if Activation == true and AllowedTypes[tostring(type(...))] == true and tick() - PlayerRemoteData.LastPing > DebouceTime and PlayerRemoteData.Violations < FallOffTime then
         LastReboundPing = tick()
 
+        if type(...) == "table" then
+            for VariableName, Value in pairs(...) do
+                if VariableName and AllowedTypes[tostring(type(Value))] then
+                    continue
+                else
+                    -- Increment violations and warn the player
+                    PlayerRemoteData.Violations += 1
+                    Utilities:Warn({"Player: ", Player.Name, " has been warned. Violation count: ", PlayerRemoteData.Violations})
+                end
+            end
+        end
+
         -- Fire the event
-        EventBind:Fire({
-            Player = Player,
-            Data = ...,
-        })
+        EventBind:Fire(Player, ...)
 
         -- Reset violations and update LastPing
         PlayerRemoteData.Violations = 0
@@ -120,14 +130,11 @@ function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, 
         return setmetatable(nil, RemoteManager)
     end
 
-    Configuration = {
-        SerializedName = SerializedName,
-        Activated = Activated,
-        newRemoteConnection = newRemoteConnection,
-        AllowedTypes = AllowedTypes,
-        FallOffTime = FallOffTime,
-        DebouceTime = DebouceTime,
-    }
+    Configuration = {}
+
+    for Name, Value in pairs(args) do
+        Configuration[Name] = Value
+    end
 
     RemoteManager.__Remotes[SerializedName] = Configuration
     RemoteManager.__Remotes[SerializedName]["Players"] = {}
