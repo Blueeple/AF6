@@ -1,4 +1,4 @@
---Services
+--//Services
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -6,13 +6,14 @@ local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
 
---Core server folders
+--//Core server folders
 local SharedModulesFolder = ReplicatedStorage:FindFirstChild("SharedModules")
 local ServerModulesFolder = ServerScriptService:FindFirstChild("ServerModules")
 local ServerBindings = ServerScriptService:FindFirstChild("ServerBindings")
 
---Server module folders
+--//Server module folders
 local Admin = ServerModulesFolder.Admin
 local Cmdr = ServerModulesFolder.Cmdr
 local Core = ServerModulesFolder.Core
@@ -20,16 +21,16 @@ local Management = ServerModulesFolder.Management
 local Network = ServerModulesFolder.Network
 local ServerUtility = ServerModulesFolder.ServerUtility
 
---ServerFolders
+--//ServerFolders
 local GameMaps = ServerStorage:FindFirstChild("GameMaps")
 
---Shared folders
+--//Shared folders
 local NetworkShared = ReplicatedStorage:FindFirstChild("Network")
 
---Shared modules
+--//Shared modules
 local Utilities = require(SharedModulesFolder.Utility)
 
---Modules
+--//Modules
 local Cmdr = require(ServerModulesFolder.Cmdr)
 local MoveSetManager = require(Management.MoveSetManager)
 local PlayerManager = require(Management.PlayerManager)
@@ -37,14 +38,15 @@ local DynamicContentLoader = require(Network.DynamicContentLoader)
 local RemoteManager = require(Network.RemoteManager)
 local MapConfigurator = require(ServerUtility.MapConfigurator)
 
---Variables
+--//Variables
 local TimerSkipped = false
 local isPlayerVotingAllowed = false
 
---Tables
+--//Tables
 local MapsAvailable = {}
 local PlayerVotes = {}
 
+--//Map scanning parameters
 MapScanParams = { --Remove this later!
     Tags_Options = {
         isStandardMapEnabled = true,
@@ -55,19 +57,16 @@ MapScanParams = { --Remove this later!
     }
 }
 
-local MoveSetsReplicationTable = {
-    Test = true,
-}
-
 local GameplayProvider = {}
 
+--//Tallys up all votes feeded to the function.
 local function TallyVotes(Votes: {})
     local ItemVotes = Votes
     local SameVotes = {}
     local HighestVoteCount = 0
     local HighestVoteName = nil
 
-    Utilities:Print("Tallying votes.")
+    Utilities:OutputLog("Tallying votes.")
 
     for Name, VoteName in PlayerVotes do
         if VoteName then
@@ -87,7 +86,7 @@ local function TallyVotes(Votes: {})
         end
     end
 
-    Utilities:Print("Processing tally.")
+    Utilities:OutputLog("Processing tally.")
 
     if #SameVotes >= 2 and HighestVoteName == nil then
         local randomIndex = math.random(1, #SameVotes)
@@ -97,16 +96,15 @@ local function TallyVotes(Votes: {})
     else
         for index, Player in Players:GetPlayers() do
             if Player then
-                Utilities:Warn("[Error - 002]: Failed to process votes.")
+                Utilities:OutputWarn("[Error - 002]: Failed to process votes.")
                 PlayerManager:Kick(PlayerManager:AllPlayers(), "Voting system failure.")
             end
         end
     end
 end
 
+--//Sets up the essential elements for the combat system.
 local function SetupServerFightSystem()
-    
-    
     local FighterEvent = RemoteManager.new({
         Name = "FighterEvent",
         Parent = NetworkShared.RemoteEvents,
@@ -117,49 +115,69 @@ local function SetupServerFightSystem()
         AllowedTypes = {
             table = true,
             string = true,
-            vector = true,
+            Vector3 = true,
             CFrame = true,
         }
     })
 
-    MoveSetManager:InitializeMoveSets(MoveSetsReplicationTable)-- Chnage this later bro.
+    local UltimateEvent = RemoteManager.new({
+        Name = "UltimateEvent",
+        Parent = NetworkShared.RemoteEvents,
+        Activated = false,
+        RemoteType = "Event",
+        DebouceTime = 999,
+        FallOffTime = 999,
+        AllowedTypes = {
+            table = true,
+            string = true,
+            Vector3 = true,
+            CFrame = true,
+        }
+    })
 
     task.wait(0.1)
 
     FighterEvent:SetActivation(true)
+    UltimateEvent:SetActivation(true)
 
     FighterEvent.Event:Connect(function(Player, Data)
         MoveSetManager:ProccessMove(Player, Data)
     end)
+
+    UltimateEvent.Event:Connect(function(Player, Data)
+        MoveSetManager:ProccessMove(Player, Data)
+    end)
 end
 
-local function LoadMap(MapName : string, Directory: Folder) --Add lighting loading.
+--//Loads a map to the server.
+local function LoadMap(MapName: string, Directory: Folder)
     local Map = nil
 
-    Utilities:Print({"Attempting to load map:", MapName})
+    Utilities:OutputLog({"Attempting to load map:", MapName})
 
     if Directory[MapName] ~= nil then
-        Utilities:Print({"Found map file for map: ", MapName})
+        Utilities:OutputLog({"Found map file for map: ", MapName})
         Map = Directory[MapName]:Clone()
+        Workspace.GameMap:ClearAllChildren()
         Map.Parent = workspace.GameMap
         PlayerManager:Reload(PlayerManager:AllPlayers())
-        task.wait()
         SetupServerFightSystem()
-        Utilities:Print("Map loading completed.")
+        Utilities:OutputLog("Map loading completed.")
     else
-        Utilities:Warn({"Failed to load map:", MapName})
+        Utilities:OutputWarn({"Failed to load map:", MapName})
         PlayerManager:Kick(PlayerManager:AllPlayers(), "Failed to load map.")
     end
 
    return Map
 end
 
-local function QuickProccesMaps(Maps: table, Amount: number)
+--//Gets all the maps from a certian table in a random order.
+local function GenerateMapRng(Maps: table, Amount: number)
     local MapsProccesed = {}
 
-    if #Maps["Whitelist"] < Amount then Utilities:Warn("Not enough maps are the game to start.") return end
+    if #Maps["Whitelist"] < Amount then Utilities:OutputWarn("Not enough maps are the game to start.") return end
     
-    Utilities:Print("Proccessing quick maps.")
+    Utilities:OutputLog("Proccessing quick maps.")
 
     for MapId = 1, Amount do
         local newMapId = math.random(1, #Maps["Whitelist"])
@@ -172,13 +190,21 @@ local function QuickProccesMaps(Maps: table, Amount: number)
         }
     end
 
-    Utilities:Print("Quick map processing completed.")
+    Utilities:OutputLog("Quick map processing completed.")
     
     return MapsProccesed
 end
 
+--//Loads the game content to a specified folder
+function GameplayProvider.LoadContent(ContentName: string, ContentFolder: Folder, SharedContentFolder: Folder)
+    local ContentToLoad = ContentFolder[ContentName]:Clone()
+    ContentToLoad.Parent = SharedContentFolder
+    return ContentToLoad
+end
+
+--//Does the normal lobby functions. --Change it to wait for all client to register true after loading.
 function GameplayProvider.StartLobby(...: {StoreKey: table})
-    Utilities:Print("Starting up core modules.")
+    Utilities:OutputLog("Starting up core modules.")
 
     local args = ...
 
@@ -188,7 +214,7 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
 
     MapsAvailable = MapConfigurator:ScanForMaps(MapScanParams, GameMaps.RankedServerMaps)
 
-    local QuickProcessedMaps = QuickProccesMaps(MapsAvailable, 6)
+    local QuickProcessedMaps = GenerateMapRng(MapsAvailable, 3)
 
     local VoteRankedMaps = RemoteManager.new({
         Name = "VoteRankedMap",
@@ -210,10 +236,10 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
     VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {Task = "Create", Maps = QuickProcessedMaps})
 
     for Time = 1, CountTime do
-        Utilities:Print({"Starting game in:", CountTime + 1 - Time})
+        Utilities:OutputLog({"Starting game in:", CountTime + 1 - Time})
 
         if Time == CountTime or TimerSkipped == true then
-            Utilities:Print("Starting vote processing.")
+            Utilities:OutputLog("Starting vote processing.")
             local newMap = TallyVotes(QuickProcessedMaps)
             task.wait()
             LoadMap(newMap, GameMaps.RankedServerMaps)

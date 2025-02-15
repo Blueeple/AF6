@@ -14,7 +14,7 @@ local function SafeCheckMap(Map)
     for Index, MapFile in ipairs(Map:GetDescendants()) do
         if MapFile.ClassName:match("Script") == true then
             MapFile:Destroy()
-            Utilities:Warn("[Error]: Map named: " .. Map.Name .. " has a potential virus destroyed.")
+            Utilities:OutputWarn("[Error]: Map named: " .. Map.Name .. " has a potential virus destroyed.")
         end
     end
 end
@@ -31,7 +31,7 @@ local function SearchMap(SearchParams : table)
                 table.insert(WhitelistedMaps, MapName)
             end
 
-            Utilities:Print("Tag: " .. tostring(ParamName) .. " is whitelisted, with a total count of: " .. #MapsWithTag .. " maps.")
+            Utilities:OutputLog("Tag: " .. tostring(ParamName) .. " is whitelisted, with a total count of: " .. #MapsWithTag .. " maps.")
         else
             local MapsWithTag = CollectionService:GetTagged(tostring(ParamName))
 
@@ -40,7 +40,7 @@ local function SearchMap(SearchParams : table)
             end
 
             if #MapsWithTag > 0 then
-                Utilities:Warn("Tag: " .. tostring(ParamName) .. " is blacklisted, with a total count of: " .. #MapsWithTag .. " maps.")
+                Utilities:OutputWarn("Tag: " .. tostring(ParamName) .. " is blacklisted, with a total count of: " .. #MapsWithTag .. " maps.")
             end
         end
     end
@@ -55,7 +55,7 @@ function MapModule:ScanForMaps(Configurations : table, MapFolder: Folder)
     local MapData = {}
     local SearchParams = {}
 
-    Utilities:Print("Beggining map scanning.")
+    Utilities:OutputLog("Beggining map scanning.")
 
     for Index, Map in pairs(MapFolder:GetChildren()) do
         if Map:IsA("Folder") then

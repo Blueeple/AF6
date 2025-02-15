@@ -78,13 +78,13 @@ function Utility:GetRigOffsetY(Rig: Model)
 end
 
 function Utility:AnimateRig(Rig: Model, AnimationName: string)
-    Utility:Print({"Setting up animations for: ", Rig.Name})
+    Utility:OutputLog({"Setting up animations for: ", Rig.Name})
 
     local Humanoid: Humanoid = Rig:WaitForChild("Humanoid")
     local Animator: Animator = Humanoid:WaitForChild("Animator") or Instance.new("Animator", Humanoid)
     local AnimationsFolder: Folder = Humanoid:WaitForChild("Animations")
 
-    if (Humanoid and Animator and AnimationsFolder) == true then Utility:Warn("[Error]: Failed to load animation.") return end
+    if (Humanoid and Animator and AnimationsFolder) == true then Utility:OutputWarn("[Error]: Failed to load animation.") return end
 
     local AnimationObject: Animation = AnimationsFolder[AnimationName]
 
@@ -93,7 +93,7 @@ function Utility:AnimateRig(Rig: Model, AnimationName: string)
     return AnimationLoaded
 end
 
-function Utility:Print(...: {})
+function Utility:OutputLog(...: {})
     if ServerSettings.isUtilityModuleOutputEnabled == true and CanRun then
         local ScriptName = Utility:TellName(debug.info(2, "s")).Name
         local Information = if type(...) == "table" then table.concat(..., " ") else ...
@@ -101,7 +101,7 @@ function Utility:Print(...: {})
     end
 end
 
-function Utility:Warn(...: {})
+function Utility:OutputWarn(...: {})
     if ServerSettings.isUtilityModuleOutputEnabled == true and CanRun then
         local ScriptName = Utility:TellName(debug.info(2, "s")).Name
         local Information = if type(...) == "table" then table.concat(..., " ") else ...

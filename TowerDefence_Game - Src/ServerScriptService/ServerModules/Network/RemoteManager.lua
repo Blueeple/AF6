@@ -1,25 +1,31 @@
+--//Services
 local Players = game:GetService("Players")
-local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
+--//Shared folder
 local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 
+--//Shared Modules
 local Utilities = require(SharedModules.Utility)
 
-local RemoteManager = {}
-RemoteManager.__index = RemoteManager
-RemoteManager.__Remotes = {}
+--//Variables
+local ModuleStartTime = tick()
 
---Checks if the module is running on the client.
+--//Object Oriented Module Constructor
+local RemoteManager = {Remotes = {}}
+RemoteManager.__index = RemoteManager
+
+--//Checks if the module is running on the client.
 if RunService:IsServer() == false then
     error("Remote manager is somehow running on the client.")
     return
 end
 
---Handles all the remote work. NOTE: RemoteFunction option is unfinished, unoptimized, Broken and NOT recommended for live server use~
+--//Handles all the remote work. NOTE: RemoteFunction option is unfinished, unoptimized, Broken and NOT recommended for live server use~
 local function HandleRemote(Player: Player, SerializedName: string, EventBind: BindableEvent, ...: table)
-    local Remote = RemoteManager.__Remotes[SerializedName]
+    local Remote = RemoteManager.Remotes[SerializedName]
 
     local Activation = Remote["Activated"]
     local AllowedTypes = Remote["AllowedTypes"]
@@ -27,69 +33,77 @@ local function HandleRemote(Player: Player, SerializedName: string, EventBind: B
     local FallOffTime = Remote["FallOffTime"]
     local RemoteType = Remote["RemoteType"]
 
-    local RemoteDataPlayer = RemoteManager.__Remotes[SerializedName]["Players"]
-    local LastReboundPingT = RemoteManager.__Remotes[SerializedName]["Ping"]
+    local RemoteDataPlayers = RemoteManager.Remotes[SerializedName]["Players"]
+    local LastReboundPingT = RemoteManager.Remotes[SerializedName]["Ping"]
     
     local LastReboundPing = 0
 
-    if RemoteDataPlayer[Player] == nil then
-        RemoteDataPlayer[Player] = {
-            LeaveGame = Player.Destroying:Once(function()
-                RemoteDataPlayer[Player] = nil
-            end),
+    Utilities:OutputLog("Proccessing data from remote: ", SerializedName)
+
+    if RemoteDataPlayers[Player] == nil then
+        RemoteDataPlayers[Player] = {
             LastPing = 1,
             Violations = 0,
         }
     end
 
+    --//Make this actrually work fr fr
     if RemoteType == "Functional" then
-        LastReboundPingT = RunService.Heartbeat:Connect(function(deltaTime)
+        --[[LastReboundPingT = RunService.Heartbeat:Connect(function(deltaTime)
             if LastReboundPing > FallOffTime then
-                Utilities:Warn({"Emergency shutdown protocal in force for Remote: ", SerializedName})
+                Utilities:OutputWarn({"Emergency shutdown protocal in force for Remote: ", SerializedName})
             end
-        end)
+        end)]]
+
+        --print(...)
     end
 
-    local PlayerRemoteData = RemoteDataPlayer[Player]
+    local PlayerRemoteData = RemoteDataPlayers[Player]
 
-    if Activation == true and AllowedTypes[tostring(type(...))] == true and tick() - PlayerRemoteData.LastPing > DebouceTime and PlayerRemoteData.Violations < FallOffTime then
+    if Activation == true and AllowedTypes[tostring(typeof(...))] == true and tick() - PlayerRemoteData.LastPing > DebouceTime and PlayerRemoteData.Violations < FallOffTime then
         LastReboundPing = tick()
 
-        if type(...) == "table" then
+        Utilities:OutputLog("The data has passsed the first event check.")
+
+        if typeof(...) == "table" then
+            Utilities:OutputLog("Table type detected.")
             for VariableName, Value in pairs(...) do
-                if VariableName and AllowedTypes[tostring(type(Value))] then
+                if VariableName and AllowedTypes[tostring(typeof(Value))] then
+                    Utilities:OutputLog({"Table data:", tostring(VariableName), " of type:", tostring(typeof(Value)), " has passed the check."})
                     continue
                 else
-                    -- Increment violations and warn the player
+                    --//Increment violations and warn the player
+                    Utilities:warned({"Table data:", tostring(VariableName), " of type:", tostring(typeof(Value)), " failed the check."})
                     PlayerRemoteData.Violations += 1
-                    Utilities:Warn({"Player: ", Player.Name, " has been warned. Violation count: ", PlayerRemoteData.Violations})
+                    Utilities:OutputWarn({"Player: ", Player.Name, " has been warned. Violation count: ", PlayerRemoteData.Violations})
                 end
             end
         end
 
-        -- Fire the event
+        --//Fire the event
+        Utilities:OutputLog("Data is verified to be used on the server.")
         EventBind:Fire(Player, ...)
 
-        -- Reset violations and update LastPing
+        --//Reset violations and update LastPing
         PlayerRemoteData.Violations = 0
-    elseif PlayerRemoteData.Violations >= FallOffTime or AllowedTypes[tostring(type(...))] == false then
-        -- Kick player for exceeding the violation threshold
+    elseif PlayerRemoteData.Violations >= FallOffTime or AllowedTypes[tostring(typeof(...))] == false then
+        --//Kick player for exceeding the violation threshold
         Player:Kick("ApolloX Detected illegal remote event use.")
         Player:Destroy()
     else
         -- Increment violations and warn the player
         PlayerRemoteData.Violations += 1
-        Utilities:Warn({"Player: ", Player.Name, " has been warned. Violation count: ", PlayerRemoteData.Violations})
+        Utilities:OutputWarn({"Player: ", Player.Name, " has been warned. Violation count: ", PlayerRemoteData.Violations})
     end
 
     PlayerRemoteData.LastPing = tick()
 end
 
---Creates a new Remote event.
+--//Creates a new Remote event.
 function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, RemoteType: string, DebouceTime: string, FallOffTime: number, AllowedTypes: {}})
     local args = ...
 
-    --Fixed variables
+    --//Fixed variables
     local Name = args["Name"]
     local RemoteType = args["RemoteType"]
     local AllowedTypes = args["AllowedTypes"]
@@ -100,22 +114,22 @@ function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, 
     local SerializedName = Name or Utilities:GenerateGUIDName(0, 30, true)
     local EventBind = Instance.new("BindableEvent")
 
-    --Dynamic variables
+    --//Dynamic variables
     local Activated = args["Activated"]
     local Configuration = {}
     local MetaConfiguration = {}
 
-    --Null variables
+    --//Null variables
     local newRemote
     local newRemoteConnection
 
-    --Types checks for the varriables.
+    --//Types checks for the varriables.
     if type(DebouceTime) ~= "number" or type(FallOffTime) ~= "number" or type(Activated) ~= "boolean" or Parent == nil and Utilities:GetTableLength(AllowedTypes) > 0 then
-        Utilities:Warn("[Error - 003]: Invalid type or missing variable.")
+        Utilities:OutputWarn("[Error - 003]: Invalid type or missing variable.")
         return
     end
 
-    Utilities:Print({"Creating new safe remote for: ", SerializedName})
+    Utilities:OutputLog({"Creating new safe remote for: ", SerializedName})
 
     EventBind.Name = SerializedName
 
@@ -126,7 +140,7 @@ function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, 
         newRemote = Instance.new("RemoteFunction", Parent)
         newRemote.Name = SerializedName
     else
-        Utilities:Warn({"Failed to create safe remote for :", SerializedName})
+        Utilities:OutputWarn({"Failed to create safe remote for :", SerializedName})
         return setmetatable(nil, RemoteManager)
     end
 
@@ -136,8 +150,8 @@ function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, 
         Configuration[Name] = Value
     end
 
-    RemoteManager.__Remotes[SerializedName] = Configuration
-    RemoteManager.__Remotes[SerializedName]["Players"] = {}
+    RemoteManager.Remotes[SerializedName] = Configuration
+    RemoteManager.Remotes[SerializedName]["Players"] = {}
 
     if RemoteType == "Event" then
         newRemoteConnection = newRemote.OnServerEvent:Connect(function(Player: Player, ...:{})
@@ -163,36 +177,36 @@ function RemoteManager.new(...: {Name: string, Parent: any, Activated: boolean, 
     return setmetatable(MetaConfiguration, RemoteManager)
 end
 
---Sets if the remote can be activated.
+--//Sets if the remote can be activated.
 function RemoteManager:SetActivation(...: boolean)
-    Utilities:Print("Setting the activation on remote, " .. self["SerializedName"])
+    Utilities:OutputLog("Setting the activation on remote, " .. self["SerializedName"])
     local Remote = self
-    RemoteManager.__Remotes[Remote.SerializedName]["Activated"] = ...
+    RemoteManager.Remotes[Remote.SerializedName]["Activated"] = ...
 end
 
---Returns every player connected to the server.
+--//Returns every player connected to the server.
 function RemoteManager:AllPlayers()
     return Players:GetChildren()
 end
 
---Fires the remote to a player or group of players.
+--//Fires the remote to a player or group of players.
 function RemoteManager:Fire(Player: Player, ...: any)
     local Remote = self["Event_nofilter"]
     local RemoteType = self["RemoteType"]
 
     if RemoteType == "Event" then
         if type(Player) == "table" then
-            Utilities:Print("Firing remote to all players.")
+            Utilities:OutputLog("Firing remote to all players.")
             Remote:FireAllClients(...)
         elseif Player ~= nil and Player:IsA("Player") then
-            Utilities:Print({"Firing remote to player, ", Player.Name})
+            Utilities:OutputLog({"Firing remote to player, ", Player.Name})
             Remote:FireClient(Player, ...)
         else
-            Utilities:Warn({"[Error - 004]: Failed to fire event: " , Remote.Name})
+            Utilities:OutputWarn({"[Error - 004]: Failed to fire event: " , Remote.Name})
         end
     elseif RemoteType == "Functional" then
         if type(Player) == "table" then
-            Utilities:Print("Firing remote to all players.")
+            Utilities:OutputLog("Firing remote to all players.")
             local Info = ...
             
             for Id, _Player in Player do
@@ -204,7 +218,7 @@ function RemoteManager:Fire(Player: Player, ...: any)
             end
 
         elseif Player ~= nil and Player:IsA("Player") then
-            Utilities:Print({"Firing remote to player, ", Player.Name})
+            Utilities:OutputLog({"Firing remote to player, ", Player.Name})
             local Info = ...
 
             local success, response = pcall(function()
@@ -213,12 +227,12 @@ function RemoteManager:Fire(Player: Player, ...: any)
 
             print(success, response)
         else
-            Utilities:Warn({"[Error - 004]: Failed to fire event: " , Remote.Name})
+            Utilities:OutputWarn({"[Error - 004]: Failed to fire event: " , Remote.Name})
         end
     end
 end
 
---Unbinds the remote from the remote management system.
+--//Unbinds the remote from the remote management system.
 function RemoteManager:Shutdown()
     local args = self
 
@@ -228,7 +242,7 @@ function RemoteManager:Shutdown()
     local Event = args["Event"]
     local Event_nofiler = args["Event_nofilter"]
 
-    Utilities:Print({"Shuting down remote:", SerializedName, "."})
+    Utilities:OutputLog({"Shuting down remote:", SerializedName, "."})
 
     self:SetActivation(false)
 
@@ -244,16 +258,40 @@ function RemoteManager:Shutdown()
     Event = nil
     Event_nofiler = nil
 
-    RemoteManager.__Remotes[SerializedName] = nil
+    RemoteManager.Remotes[SerializedName] = nil
 
-    Utilities:Print({SerializedName, "has shutted down."})
+    Utilities:OutputLog({SerializedName, "has shutted down."})
 
     return setmetatable({nil}, RemoteManager)
 end
 
---Returns the information from the remote.
+--//Returns the information from the remote.
 function RemoteManager:GetInfo()
     return self
 end
 
+--/Removes a player from an safe remote.
+function RemoteManager:RemovePlayerFrom(Player: Player, Remote: RemoteEvent)
+    if Remote == nil then Remote = self end
+
+    Utilities:OutputLog({"Removing player:", tostring(Player), "from remotes."})
+    if Remote == "$Active" then
+        Utilities:OutputLog({"Removing player:", tostring(Player), "from all remotes."})
+        for RemoteName, Data in pairs(RemoteManager.Remotes) do
+            if Data["Players"][Player] ~= nil then
+                Data["Players"][Player] = nil
+            end
+        end
+    elseif Remote ~= nil and RemoteManager.Remotes[Remote.Name] ~= nil then
+        Utilities:OutputLog({"Removing player:", tostring(Player), "from remote:", Remote, "."})
+        RemoteManager.Remotes[Remote.Name]["Players"][Player] = nil
+    else
+        Utilities:OutputWarn({"Failed to remove:", tostring(Player), "from remote:", Remote, "did you trigger this event when the remote doesn't exist?"})
+        return
+    end
+
+    Utilities:OutputLog({"Removal of player:", tostring(Player), "completed."})
+end
+
+Utilities:OutputLog({"Initialized in:", tick() - ModuleStartTime})
 return RemoteManager

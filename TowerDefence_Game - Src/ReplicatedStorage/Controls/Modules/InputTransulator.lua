@@ -1,158 +1,176 @@
+--//Services
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
-local Signal = Instance.new("BindableEvent")
+--//Shared folders
+local SharedModules = ReplicatedStorage:WaitForChild("SharedModules")
 
-local PlayerGui = Players.LocalPlayer.PlayerGui
+--Local player
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer.PlayerGui
 
-local MobileKeyboardTransulationEnabled = nil
-local MobileScreenGui = nil
+--//Client modules
+local Utilities = require(SharedModules.Utility)
 
-local ButtonScaling = nil
-local ButtonPositioning = nil
+--//Binable Events
+local KeySend = Instance.new("BindableEvent")
 
-local DynamicPropertiesMobile = {
-	Position = true,
-	Size = true,
-	Visible = true
+--//Variables
+local ModuleStartTime = tick()
+
+--//Tables
+local GamepadTypes = {
+	Gamepad1 = true,
+	Gamepad2 = true,
+	Gamepad3 = true,
+	Gamepad4 = true,
+	Gamepad5 = true,
+	Gamepad6 = true,
+	Gamepad7 = true,
+	Gamepad8 = true,
 }
 
-local EasyKeyMappings = {
-	M1 = Enum.KeyCode.MouseLeftButton
-}
-
-local KeyboardTransulator = {}
+--//Object Oriented App
+local KeyboardTransulator = {Binds = {}}
 KeyboardTransulator.__index = KeyboardTransulator
-KeyboardTransulator.Binds = {}
 
---Creates a new mobile button input by compiling the the button compentents from a table.
-local function CreateMobileButton(KeyName: string, Template: Instance)
-	local GuiFolder = Template:FindFirstChild("Gui") or nil
-	local ConfigFolder = Template:FindFirstChild("Config") or nil
+--//Checks if the module is running on a device with a touch screen.
+if UserInputService.TouchEnabled then
+	local TouchGui = PlayerGui:WaitForChild("TouchGui")
+	local TouchControlFrame = TouchGui.TouchControlFrame
+	local JumpButton = TouchControlFrame:FindFirstChildOfClass("ImageButton")
 
-	local GuiMain:GuiObject = GuiFolder:FindFirstChild("Main")
-	local ConfigModule = require(ConfigFolder:FindFirstChildOfClass("ModuleScript"))
+	local CustomControlFrame = Instance.new("Frame", TouchGui)
 
-	local Default = nil
+	CustomControlFrame.Size = UDim2.fromScale(1, 1)
+	CustomControlFrame.Position = UDim2.fromScale(0, 0)
+	CustomControlFrame.BackgroundTransparency = 1
+	CustomControlFrame.Interactable = true
 
-	if GuiFolder ~= nil and ConfigFolder ~= nil then
-		Default = GuiMain:Clone()
-		ConfigModule:Apply(Default)
-		ConfigModule:Idle(Default)
-	else
-		error("Failed to create mobile button, Did you forget to implement the correct directories?", 1)
-	end
-
-	return {Button = Default, Settings = ConfigModule}
-end
-
---Add mouse input detection and the missing controller input detection (Triggers and joysticks) Also make it so it stops mobile inputs when roblox menu opens.
-local function InputSignal(KeyName: string, ...: {Keyboard: Enum.KeyCode, Console: Enum.KeyCode, MobileButton: ImageButton, MobileModule: ModuleScript})
-	local args = ...
-
-	local MobileButton = args["MobileButton"]
-	local MobileModule = args["MobileModule"]
-
-	UserInputService.InputBegan:Connect(function(Input: InputObject, AllowInputPassThrough: boolean)
-		if Input.KeyCode == Enum.KeyCode[args["Keyboard"]] or Input.KeyCode == Enum.KeyCode[args["Console"]] and not AllowInputPassThrough then
-			Signal:Fire(KeyName)
-		end
-	end)
-	
-	if MobileButton ~= nil then
-		MobileButton.InputBegan:Connect(function(Input: InputObject)
-			if Input.UserInputType == Enum.UserInputType.Touch and Input.UserInputState == Enum.UserInputState.Begin and GuiService.TouchControlsEnabled == true then
-				MobileModule:Active(MobileButton)
-				Signal:Fire(KeyName)
-			end
-		end)
-
-		MobileButton.InputEnded:Connect(function(Input: InputObject)
-			MobileModule:Idle(MobileButton)
-		end)
-	end
-end
-
-function KeyboardTransulator:InitializeMobileDetection(...: boolean)
-	if UserInputService.TouchEnabled == true and ... == true then
-		local MobileTouchFrame = PlayerGui:WaitForChild("TouchGui")
-		local CustomMobileFrame = Instance.new("Frame")
-
-		local JumpButton = MobileTouchFrame:WaitForChild("TouchControlFrame").JumpButton
-		ButtonScaling = JumpButton.Size
-		ButtonPositioning = JumpButton.Position
-		
-		if ... == true then
-			MobileKeyboardTransulationEnabled = true
-		end
-
-		CustomMobileFrame.Name = "CustomTouchFrame"
-		CustomMobileFrame.Size = UDim2.fromScale(1, 1)
-		CustomMobileFrame.LayoutOrder = 1 
-		CustomMobileFrame.Active = false
-		CustomMobileFrame.Interactable = true
-		CustomMobileFrame.BackgroundTransparency = 1
-		CustomMobileFrame.Visible = true
-		CustomMobileFrame.Parent = MobileTouchFrame
-
-		MobileScreenGui = CustomMobileFrame
-
-		JumpButton.Changed:Connect(function(Property)
-			if DynamicPropertiesMobile[Property] ~= nil then
-				MobileScreenGui.Visible = JumpButton.Visible
-			end
-		end)
-	else
-		return
-	end
-end
-
-function KeyboardTransulator.new(KeyName: string, ...: {MappedInputKey: Enum.KeyCode, ConsoleKeyMapping: Enum.KeyCode, MobileTemplate: Folder})
-	local args = ...
-	local Self = {}
-
-	local MobileTemplate = args["MobileTemplate"]
-	local ActivatedBind = Instance.new("BindableEvent")
-	local ProcessedKeyName = nil
-	local MobileButton = nil
-	
-	if MobileKeyboardTransulationEnabled == true then
-		MobileButton = CreateMobileButton(KeyName, MobileTemplate)
-		MobileButton["Button"].Parent = MobileScreenGui
-	end
-
-	if KeyboardTransulator.Binds[KeyName] == nil then
-		ProcessedKeyName = KeyName
-		KeyboardTransulator.Binds[ProcessedKeyName] = Self
-	else
-		warn("[InputTransulator]: Binding: " .. KeyName .. " already exists, using new bind: " .. KeyName .. 1 .. ".")
-		ProcessedKeyName = KeyName .. 1
-		KeyboardTransulator.Binds[ProcessedKeyName] = Self
-	end
-
-	Self.Button = MobileButton
-	Self.Activated = ActivatedBind.Event
-	Self.InputTriggerBind = ActivatedBind
-
-	local NewInput = InputSignal(ProcessedKeyName, {
-		Keyboard = args["MappedInputKey"],
-		Console = args["ConsoleKeyMapping"],
-		MobileButton = if MobileButton then MobileButton.Button else nil,
-		MobileModule = if MobileButton then MobileButton.Settings else nil
-	})
-
-	Signal.Event:Connect(function(KeyNameTriggered: string)
-		if KeyNameTriggered == ProcessedKeyName then
-			ActivatedBind:Fire({
-				KeyboardKey = args["MappedInputKey"],
-				ConsoleKey = args["ConsoleKeyMapping"],
-				MobileButton = if MobileButton then MobileButton else nil
-			})
+	JumpButton.Changed:Connect(function(Property: any)
+		if Property == "Visible" then
+			CustomControlFrame.Visible = JumpButton.Visible
 		end
 	end)
 
-	return setmetatable(Self, KeyboardTransulator)
+	Utilities:OutputLog("Mobile controls initialied.")
 end
+
+UserInputService.InputBegan:Connect(function(Input: InputObject, PassThroughEnabled: boolean)
+	KeySend:Fire(Input.UserInputType.Name, Input.KeyCode, PassThroughEnabled)
+end)
+
+local function CompileToButton()
+	
+end
+
+--//Return all the binds and thieir properties.
+function KeyboardTransulator:GetBind(Argument: string)
+	assert(typeof(Argument) == "string", "Did you forget to arg 1? ($All / [BindName])")
+
+
+end
+
+--//Creates a new Input bind that can emulate a keyboard bind with ease.
+function KeyboardTransulator.new(Name: string, Arguments: {PassThroughEnabled: boolean, Enabled: boolean}, ...: {Keyboard: {Major: Enum.KeyCode, Alt: Enum.KeyCode, EnmulateMouse: Enum.UserInputType}, Mobile: {Template: ModuleScript, Properties: {any}}, Console: {Major: Enum.KeyCode, Alt: Enum.KeyCode}})
+	--//Variables
+	local Args = ...
+	local BindName = Name
+
+	local BindArguments = Arguments
+
+	local KeyboardData = Args.Keyboard
+	local MobileData = Args.Mobile
+	local ConsoleData = Args.Console
+
+	local BypassEnabled = BindArguments.PassThroughEnabled
+	local KeyEnabled = BindArguments.Enabled
+
+	local BindSender = Instance.new("BindableEvent")
+
+	local self = {}
+
+	--//Creation checks
+	if KeyboardTransulator.Binds[Name] == nil then
+		KeyboardTransulator.Binds[Name] = {
+			InputData = self.Bindings,
+			InputArguments = self.Arguments,
+			ActivatedContext = self.Activated,
+		}
+	else
+		Utilities:OutputWarn({"Failed to create bind of Name:", Name , " as another bind has the same name."})
+		return setmetatable({}, KeyboardTransulator)
+	end
+
+	--//Self bindings
+	self.Bindings = {
+		Keyboard = {
+			MajorBind = KeyboardData.Major,
+			AltBind = KeyboardData.Alt,
+			EmulateMouse = KeyboardData.EnmulateMouse,
+		},
+		Touch = {
+			MajorBind = "Button",
+			TemplateData = MobileData.Template,
+			Properties = MobileData.Properties,
+		},
+		Gamepad = {
+			MajorBind = ConsoleData.Major,
+			Alt = ConsoleData.Alt,
+			AuctuationPoint = 0, --PlaceHolder input type.
+		},
+	}
+	self.Arguments= {
+		PassThroughEnabled = BypassEnabled,
+	}
+	self.Activated = BindSender.Event
+
+	--//Appplications
+	MobileData.MajorBind = self.Bindings.Touch.MajorBind
+
+	--//Self functions
+	function self:SetSetting(SettingToChange: any, Variable: any)
+		assert(typeof(SettingToChange) == "string", "Failed to apply setting " .. tostring(SettingToChange) .. " invalid type.")
+		assert(SettingToChange ~= nil, "A variable must be mentioned.")
+	
+	if self[SettingToChange] ~= nil then
+		SettingToChange = Variable
+		Utilities:OutputLog("Applied setting.")
+	else
+		Utilities:OutputWarn("Setting", tostring(SettingToChange) ,"doesn't exist")
+		return nil
+	end
+
+		print(self)
+	end
+
+	function self:Remove()
+		BindSender:Destroy()
+		self = nil
+
+		Utilities:OutputLog({"Removed Key bind:", BindName})
+
+		return nil
+	end
+
+	--//Checks if the KeySend event has been triggered
+	KeySend.Event:Connect(function(InputType, InputCode, PassThroughEnabled)
+		if InputType == Enum.UserInputType.Keyboard.Name and InputCode == KeyboardData.Major or InputCode == KeyboardData.Alt and PassThroughEnabled == BypassEnabled and KeyEnabled then
+			BindSender:Fire(BindName, Args)
+		elseif InputType == Enum.UserInputType.Touch.Name and MobileData.MajorBind.GuiState == Enum.GuiState.Press and PassThroughEnabled == BypassEnabled and KeyEnabled then
+			BindSender:Fire(BindName, Args)
+		elseif GamepadTypes[InputType] == true and InputCode == ConsoleData.Major or InputCode == ConsoleData.Alt and PassThroughEnabled == BypassEnabled and KeyEnabled then
+			BindSender:Fire(BindName, Args)
+		elseif KeyboardData.EnmulateMouse ~= nil and InputType == KeyboardData.EnmulateMouse.Name and PassThroughEnabled == BypassEnabled and KeyEnabled then
+			BindSender:Fire(BindName, Args)
+		end
+	end)
+
+	return setmetatable(self, KeyboardTransulator)
+end
+
+Utilities:OutputLog({"Initialized transulator in:", tick() - ModuleStartTime})
 
 return KeyboardTransulator

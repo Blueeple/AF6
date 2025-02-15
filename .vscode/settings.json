@@ -1,3 +1,7 @@
 {
-    "vscord.enabled": true
+    "vscord.enabled": true,
+    "[lua]": {
+        "editor.autoClosingComments": "languageDefined"
+    },
+    "luau-lsp.sourcemap.rojoProjectFile": "Framework.project.json"
 }

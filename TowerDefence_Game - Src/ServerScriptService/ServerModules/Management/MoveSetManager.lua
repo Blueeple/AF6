@@ -1,23 +1,26 @@
---Services
+--//Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
---unkown folder
+--//Shared folders
+local NetworkShared = ReplicatedStorage:FindFirstChild("Network")
 local ReplicatedAssetsFolder = ReplicatedStorage:WaitForChild("ReplicatedAssets")
-local MoveSetsFolder = ServerStorage:FindFirstChild("MoveSets")
 local NetworkFolder = ReplicatedStorage:FindFirstChild("Network")
-local ServerModules = ServerScriptService:FindFirstChild("GameServerModules")
 local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 
---Core server folders
+--//Server folders
+local MoveSetsFolder = ServerStorage:FindFirstChild("MoveSets")
+local ServerModules = ServerScriptService:FindFirstChild("GameServerModules")
+
+--//Core server folders
 local SharedModulesFolder = ReplicatedStorage:FindFirstChild("SharedModules")
 local ServerModulesFolder = ServerScriptService:FindFirstChild("ServerModules")
 local ServerBindings = ServerScriptService:FindFirstChild("ServerBindings")
 
---Server module folders
+--//Server module folders
 local Admin = ServerModulesFolder.Admin
 local Cmdr = ServerModulesFolder.Cmdr
 local Core = ServerModulesFolder.Core
@@ -25,31 +28,21 @@ local Management = ServerModulesFolder.Management
 local Network = ServerModulesFolder.Network
 local ServerUtility = ServerModulesFolder.ServerUtility
 
---Shared folders
-local NetworkShared = ReplicatedStorage:FindFirstChild("Network")
-
---Shared modules
+--//Shared modules
 local Utilities = require(SharedModulesFolder.Utility)
 
---Server modules
+--//Server modules
 local PlayerManager = require(Management.PlayerManager)
 
-local MoveSetManager = {}
+local MoveSetManager = {
+    AvaliableMoveSets = {}
+}
 
---Creates a new MoveSet manager for a player.
-function MoveSetManager:InitializeMoveSets(...: table) --Chaneg this to make use the player's actrual moveset.
-    Utilities:Print("Initializing movesets.")
+function MoveSetManager:LoadMoveSet(Moveset: string)
+    local Moveset_Server = MoveSetsFolder[Moveset]
+    local Moveset_Client = MoveSetsFolder[Moveset .. "Client"]
 
-    for MoveSetName, Bool in pairs(...) do
-        local MoveSet = MoveSetsFolder[MoveSetName] or nil
-
-        if MoveSetName ~= nil then
-            local Client = MoveSetsFolder[MoveSetName .. "Client"]:Clone()
-            Client.Parent = ReplicatedAssetsFolder.MoveSets
-        end
-    end
-
-    Utilities:Print("Initializing completed.")
+    
 end
 
 function MoveSetManager:CreateHitBox(Name: string, ...: {Parent: Instance, Time: number, CFrame: CFrame, Shape: Enum.PartType}) -- summ like that idk
@@ -75,5 +68,13 @@ function MoveSetManager:ProccessMove(Player: Player, Data: table)
     print(PlayerData)
     print(Data)
 end
+
+function MoveSetManager:ProccessUltimate(Player: Player, Data: table)
+    local PlayerData = PlayerManager:ReadPlayer(Player)
+    print(PlayerData)
+    print(Data)
+end
+
+
 
 return MoveSetManager

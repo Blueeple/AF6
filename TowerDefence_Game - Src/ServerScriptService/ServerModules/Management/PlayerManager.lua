@@ -16,8 +16,22 @@ local function GenerateNewUserColor()
     return Color3.fromRGB(math.random(0, 255), math.random(0, 255), math.random(0, 255))
 end
 
-local function SetupCharacter(Character: Model)
+local function SetupCharacter(Character: Model, Humanoid: Humanoid)
     local Player = Players:GetPlayerFromCharacter(Character)
+    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+
+    local Animate = Character:FindFirstChild("Animate")
+    local Health = Character:FindFirstChild("Health")
+
+    local RightArm = Character:FindFirstChild("Right Arm")
+    local LeftArm = Character:FindFirstChild("Left Arm")
+    local RightLeg = Character:FindFirstChild("Right Leg")
+    local LeftLeg = Character:FindFirstChild("Left Leg")
+    local Torso = Character:FindFirstChild("Torso Arm")
+
+    Character.PrimaryPart = HumanoidRootPart
+    Animate:Destroy()
+    Health:Destroy()
 
     if Character then
         for index, BasePart in pairs(Character:GetDescendants()) do
@@ -27,13 +41,19 @@ local function SetupCharacter(Character: Model)
         end
     end
 
-    PlayerManager.Players[Player.UserId]["CanUseMove"] = true
+    
 end
 
 local function SetupHumanoid(Humanoid: Humanoid)
     Humanoid.BreakJointsOnDeath = false
     Humanoid.AutoJumpEnabled = false
     Humanoid.NameOcclusion = Enum.NameOcclusion.NoOcclusion
+
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Flying, false)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
 end
 
 local function SetPlayerValue(Player: Player, Name: string, Value: any)
@@ -44,7 +64,7 @@ end
 function PlayerManager.new(Player: Player)
     local UserColor = GenerateNewUserColor()
 
-    Utilities:Print({"Indexing new player for:", Player.Name})
+    Utilities:OutputLog({"Indexing new player for:", Player.Name})
 
     local PlayerConfigurations = {
         Name = Player.Name,
@@ -55,13 +75,13 @@ function PlayerManager.new(Player: Player)
 
     PlayerManager.Players[Player.UserId] = PlayerConfigurations
     
-    SetPlayerValue(Player, "MoveSet", "Test")
+    SetPlayerValue(Player, "MoveSet", "Ohma_Tokita")
 
     local PlayerConnection = Player.CharacterAdded:Connect(function(Character: Model)
         local PlayerData = PlayerManager.Players[Player.UserId]
         local Humanoid = Character:FindFirstChildOfClass("Humanoid")
 
-        SetupCharacter(Character)
+        SetupCharacter(Character, Humanoid)
         SetupHumanoid(Humanoid)
         SetPlayerValue(Player, "CanUseMove", true)
 
@@ -69,7 +89,7 @@ function PlayerManager.new(Player: Player)
 
         Humanoid.Died:Once(function()
             SetPlayerValue(Player, "CanUseMove", false)
-            task.wait(0.5)
+            task.wait(2.5)
             Player:LoadCharacter()
         end)
     end)
@@ -87,7 +107,7 @@ function PlayerManager:ReadPlayer(Player: Player)
     if PlayerManager.Players[Player.UserId] ~= nil then
         return PlayerManager.Players[Player.UserId]
     else
-        Utilities:Warn({"No player found for name:", tostring(Player)})
+        Utilities:OutputWarn({"No player found for name:", tostring(Player)})
     end
 end
 
@@ -99,7 +119,7 @@ function PlayerManager:Kick(PlayersInGame: {}, KickInformationRaw: {})
     local PlayersToKick = if type(PlayersInGame) == "table" then PlayersInGame else Players:FindFirstChild(PlayersInGame)
     local KickText = if type(KickInformationRaw) == "table" then table.concat(KickInformationRaw, " ") else tostring(KickInformationRaw)
 
-    Utilities:Print("Kicking players.")
+    Utilities:OutputLog("Kicking players.")
 
     if type(PlayersToKick) == "table" then
         local PlayersTable = PlayersToKick or nil
@@ -118,7 +138,7 @@ end
 
 function PlayerManager:Reload(PlayersInGame: {})
     local PlayersToReload = if type(PlayersInGame) == "table" then PlayersInGame else Players:FindFirstChild(PlayersInGame)
-    Utilities:Print("Reloading players.")
+    Utilities:OutputLog("Reloading players.")
 
     if type(PlayersToReload) == "table" then
         local PlayersTable = PlayersToReload or nil
