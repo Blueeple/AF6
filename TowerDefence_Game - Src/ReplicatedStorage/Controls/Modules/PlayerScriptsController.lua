@@ -57,9 +57,13 @@ local function TypeCheckTable(...: table)
 end
 
 function PlayerScriptsController:InitializeScirpts()
+    --//Variables
     local StartTime = tick()
     local RbxCharacterSounds = PlayerScripts:WaitForChild("RbxCharacterSounds")
     
+    --//Initializers
+    PlayerScriptsController["InitializeScirpts"] = nil
+
     RbxCharacterSounds.Enabled = false
     RbxCharacterSounds:Destroy()
     
