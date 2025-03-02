@@ -119,7 +119,7 @@ function PlayerManager.new(Player: Player)
     self.Settings = PlayerSettings
     
     --//PlayerSettings
-    PlayerSettings.RespawningEnabled = false
+    PlayerSettings.RespawningEnabled = true
 
     --//Objects
     local UserColor = GenerateNewUserColor()

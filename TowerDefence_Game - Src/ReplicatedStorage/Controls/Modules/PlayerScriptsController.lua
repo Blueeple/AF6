@@ -33,6 +33,10 @@ local Utilities = require(SharedModules.Utility)
 
 --//Variables
 local ModuleStartTime = tick()
+local RunTime = nil
+
+--//Objects
+local RunServiceBind = Instance.new("BindableEvent")
 
 --//Exported types
 export type ClassTypes = {
@@ -41,6 +45,7 @@ export type ClassTypes = {
 
 export type Constructor = {
     Name: string,
+    Characer: Model,
     Class:  ClassTypes,
     Settings: any?,
 }
@@ -52,6 +57,26 @@ export type ModuleImports = {
 --//Object Oriented Module Constructor
 local PlayerScriptsController = {}
 PlayerScriptsController.__index = PlayerScriptsController
+
+PlayerScriptsController.Characters = {}
+
+RunServiceBind.Event:Connect(function(Args: Model)
+    if PlayerScriptsController.Characters[Args.Name] == nil then
+        PlayerScriptsController.Characters[Args.Name] = Args.Character
+    else
+        Utilities:OutputWarn("Failed to add character:", (Args.Character.Name .. ", character already exists!"))
+    end
+end)
+
+local function DynamicCharacterHandler(...)
+    --/Variables
+    local Characer = ...
+
+    local Humanoid: Humanoid = Characer:WaitForChild("Humanoid")
+    local HumanoidRootPart: Part = Characer:WaitForChild("HumanoidRootPart")
+
+    RunServiceBind:Fire(Characer)
+end
 
 function PlayerScriptsController:InitializeScirpts(Args: ModuleImports)
     --//Variables
@@ -70,15 +95,7 @@ end
 
 --//Contructs a new Character controller class.
 function PlayerScriptsController:Create(Args: Constructor)
-    --//Variables
-    local Settings = Args.Settings or nil
-
-    if Args then
-        --//Self
-        local self = {}
-
-        --//Self functions
-    end
+    
 end
 
 return PlayerScriptsController

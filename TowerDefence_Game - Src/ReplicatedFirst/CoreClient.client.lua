@@ -23,7 +23,7 @@ local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 local ControlModules = ControlsFolder:WaitForChild("Modules")
 local ControlTemplates = ControlsFolder:WaitForChild("Templates")
 local ControlInterfaces = ControlsFolder:WaitForChild("Interfaces")
-local PlayerScriptsModules = ControlTemplates:WaitForChild("PlayerController")
+--local PlayerScriptsModules = ControlTemplates:WaitForChild("PlayerController")
 
 --//Local Player
 local LocalPlayer = Players.LocalPlayer
@@ -95,17 +95,7 @@ local VoteForRankedMapEvent: RemoteEvent = nil
 --//Global Connections
 LocalPlayer.CharacterAdded:Connect(function(CharacterAdded)
     --//Variable
-    local DynamicCharacter = PlayerScriptsController:Create({
-        Name = LocalPlayer.Name,
-        Class = "DynamicCharacter",
-        Settings = {
-            RenderingFrameRate = 30,
-            RenderSize = 30,
-            FootControllerEnabled = true,
-            DynamicWalkSpeed = true,
-            DynamicWalkSpeedValue = 0.1
-        },
-    })
+    local DynamicCharacter = PlayerScriptsController:Create(CharacterAdded)
 
     --//Objects
     local Humanoid = CharacterAdded:WaitForChild("Humanoid")
@@ -115,8 +105,10 @@ LocalPlayer.CharacterAdded:Connect(function(CharacterAdded)
     Humanoid.WalkSpeed = 1.5
     Humanoid.JumpHeight = 5.4
     
-    --//HumanoidDynamic Constructor
-    
+    --//Humanoid death handler
+    Humanoid.Died:Connect(function()
+        DynamicCharacter:Remove()
+    end)
 end)
 
 --//Module Initializers
@@ -228,7 +220,7 @@ local function InitializeRBLX()
     local AudioProfiler = MenuController:GetAudioProfiler()
 
     --//Checks if the game is running on the RBLX Client.
-    if RunService:IsClient() == true then
+    if RunService:IsStudio() == false then
         --//Setup the main BloxStrap rpc menus.
         BloxStrapSDK.SetRichPresence({
             details = GameName .. " | " .. CurrentGameMode,
@@ -248,51 +240,55 @@ local function InitializeRBLX()
 
     --//Window focus methods
     UserInputService.WindowFocusReleased:Connect(function()
-        local AudioProfile = AudioProfiler:GetProfile("FX_Group")
-        AudioProfile:SetVolume(0.15, 1.25)
+        if RunService:IsStudio() == false then
+            local AudioProfile = AudioProfiler:GetProfile("FX_Group")
+            AudioProfile:SetVolume(0.15, 1.25)
 
-        GameClientStatus = "Away from game. (Idle)"
+            GameClientStatus = "Away from game. (Idle)"
 
-        BloxStrapSDK.SetRichPresence({
-            details = GameName .. " | " .. CurrentGameMode,
-            state = "Ranked: " .. RankedSystemData.CurrentRank,
-            timeStart = TimeStamp,
-            timeEnd = TimeStamp + 60,
-            largeImage = {
-                assetId = GameIcons.DiscordRPC.Idle,
-                hoverText = GameClientStatus
-            },
-            smallImage = {
-                assetId = GameGroup.EmblemUrl,
-                hoverText = "BlueVez Studios"
-            }
-        })
+            BloxStrapSDK.SetRichPresence({
+                details = GameName .. " | " .. CurrentGameMode,
+                state = "Ranked: " .. RankedSystemData.CurrentRank,
+                timeStart = TimeStamp,
+                timeEnd = TimeStamp + 60,
+                largeImage = {
+                    assetId = GameIcons.DiscordRPC.Idle,
+                    hoverText = GameClientStatus
+                },
+                smallImage = {
+                    assetId = GameGroup.EmblemUrl,
+                    hoverText = "BlueVez Studios"
+                }
+            })
 
-        Utilities:OutputLog("Cofigured Discord RichPresence to idle mode.")
+            Utilities:OutputLog("Cofigured Discord RichPresence to idle mode.")
+        end
     end)
 
     UserInputService.WindowFocused:Connect(function()
-        local AudioProfile = AudioProfiler:GetProfile("FX_Group")
-        AudioProfile:SetVolume(1, 1.25)
+        if RunService:IsStudio() == false then
+            local AudioProfile = AudioProfiler:GetProfile("FX_Group")
+            AudioProfile:SetVolume(1, 1.25)
 
-        GameClientStatus = "Playing a ranked game."
+            GameClientStatus = "Playing a ranked game."
 
-        BloxStrapSDK.SetRichPresence({
-            details = GameName .. " | " .. CurrentGameMode,
-            state = "Ranked: " .. RankedSystemData.CurrentRank,
-            timeStart = TimeStamp,
-            timeEnd = TimeStamp + 60,
-            largeImage = {
-                assetId = GameIcons.DiscordRPC.Active,
-                hoverText = GameClientStatus
-            },
-            smallImage = {
-                assetId = GameGroup.EmblemUrl,
-                hoverText = "BlueVez Studios"
-            }
-        })
+            BloxStrapSDK.SetRichPresence({
+                details = GameName .. " | " .. CurrentGameMode,
+                state = "Ranked: " .. RankedSystemData.CurrentRank,
+                timeStart = TimeStamp,
+                timeEnd = TimeStamp + 60,
+                largeImage = {
+                    assetId = GameIcons.DiscordRPC.Active,
+                    hoverText = GameClientStatus
+                },
+                smallImage = {
+                    assetId = GameGroup.EmblemUrl,
+                    hoverText = "BlueVez Studios"
+                }
+            })
 
-        Utilities:OutputLog("Cofigured Discord RichPresence to Online mode.")
+            Utilities:OutputLog("Cofigured Discord RichPresence to Online mode.")
+        end
     end)
 
     LocalPlayer.Idled:Connect(function()
@@ -325,8 +321,6 @@ local function SetupMenus()
     --//Core setup
     InitializeRBLX()
     LoadTopBarIcons()
-
-    print(PlayerUserData)
 
     --//Triggers when there is an event from VoteForRankedMap event.
     VoteForRankedMapEvent.OnClientEvent:Connect(function(Data: table)
@@ -532,16 +526,15 @@ local function CreateLoadingScreen()
         task.spawn(function()
             InitializeRemoteEvent()
             SetupMenus()
+
+            Utilities:OutputLog({"Loaded Client in:", tick() - ClientStartTime})
         end)
 
         StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
-        StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, true)
 
         if Character.PrimaryPart then
             Character.PrimaryPart.Anchored = false
         end
-
-        Utilities:OutputLog({"Loaded Client in:", tick() - ClientStartTime})
     end
 end
 
