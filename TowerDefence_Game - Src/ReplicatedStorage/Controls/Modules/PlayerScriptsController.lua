@@ -45,18 +45,15 @@ export type Constructor = {
     Settings: any?,
 }
 
+export type ModuleImports = {
+    Folder: Folder
+}
+
 --//Object Oriented Module Constructor
 local PlayerScriptsController = {}
 PlayerScriptsController.__index = PlayerScriptsController
 
---//Type checks a table.
-local function TypeCheckTable(...: table)
-    if ... ~= nil then
-        
-    end
-end
-
-function PlayerScriptsController:InitializeScirpts()
+function PlayerScriptsController:InitializeScirpts(Args: ModuleImports)
     --//Variables
     local StartTime = tick()
     local RbxCharacterSounds = PlayerScripts:WaitForChild("RbxCharacterSounds")
@@ -76,9 +73,7 @@ function PlayerScriptsController:Create(Args: Constructor)
     --//Variables
     local Settings = Args.Settings or nil
 
-    local TableTypeCheckings = TypeCheckTable(Settings)
-
-    if Args and TableTypeCheckings == true then
+    if Args then
         --//Self
         local self = {}
 

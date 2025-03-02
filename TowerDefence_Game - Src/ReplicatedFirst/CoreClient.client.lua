@@ -23,6 +23,7 @@ local SharedModules = ReplicatedStorage:FindFirstChild("SharedModules")
 local ControlModules = ControlsFolder:WaitForChild("Modules")
 local ControlTemplates = ControlsFolder:WaitForChild("Templates")
 local ControlInterfaces = ControlsFolder:WaitForChild("Interfaces")
+local PlayerScriptsModules = ControlTemplates:WaitForChild("PlayerController")
 
 --//Local Player
 local LocalPlayer = Players.LocalPlayer
@@ -49,6 +50,7 @@ local ClientLoaded = false
 local CurrentGameMode = "GameMode?"
 local GameClientVersion = 0
 local GameName = "BattleGrounds"
+local GameClientStatus = "Playing a ranked game."
 local GameGroup = GroupService:GetGroupInfoAsync(game.CreatorId)
 local TimeStamp = os.time()
 local MaxContentFetchTime = 5
@@ -71,6 +73,14 @@ local RankedSystemData = {
     CurrentRankDivision = "Division?",
     CurrentRankPercent = 0, --How much percent acheived in current rank.
     CurrentRankLeaderStat = 0, --What placement does the player have in that rank.
+}
+
+local GameIcons = {
+    DiscordRPC = {
+        Active = 137601480983962,
+        Idle = 74473918826906,
+        Away = 137601480983962,
+    }
 }
 
 local PlayerUserData = nil
@@ -122,9 +132,6 @@ end
 local function WaitForUserData(LoadingBar: TextLabel)
     Utilities:OutputLog({"Loading player data."})
 
-    --//Variables
-    local RequestDataConnection: RBXScriptConnection = nil
-
     LoadingBar.Text = "Waiting for server reponse..."
 
     --//Checks if the remote event: RequestForData exists
@@ -132,7 +139,7 @@ local function WaitForUserData(LoadingBar: TextLabel)
         Utilities:OutputLog({"RequestForData remote detected."})
 
         --//Detects when UserData was send to the client
-        RequestDataConnection = RequestForData.OnClientEvent:Connect(function(UserData: any)
+        RequestForData.OnClientEvent:Once(function(UserData: any)
             PlayerUserData = UserData
             ClientLoaded = true
         end)
@@ -187,19 +194,50 @@ local function LoadTopBarIcons()
 
 end
 
+--//Initializes the sound groups for the client.
+local function InitializeSoundGroups()
+    --//Objects
+    local GroupFolder = Instance.new("Folder")
+    local AudioListiener = SoundService:GetListener()
+
+    --//Sound Groups
+    local FXGroups = {
+        UI_Group = Instance.new("SoundGroup"),
+        FX_Group = Instance.new("SoundGroup"),
+        Music_Group = Instance.new("SoundGroup"),
+        LocalCharacter_Group = Instance.new("SoundGroup"),
+        OtherCharacter_Group = Instance.new("SoundGroup"),
+    }
+
+    --//Group folder properties
+    GroupFolder.Name = "AudioProfiles"
+    GroupFolder.Parent = SoundService
+
+    for Index, FXG in pairs(FXGroups) do
+        FXG.Parent = GroupFolder
+        FXG.Name = tostring(Index)
+        FXG.Volume = 1
+    end
+    
+    return FXGroups
+end
+
 --//Initializes SDKs for RobloxClient
 local function InitializeRBLX()
+    --//Objects
+    local AudioProfiler = MenuController:GetAudioProfiler()
+
     --//Checks if the game is running on the RBLX Client.
     if RunService:IsClient() == true then
         --//Setup the main BloxStrap rpc menus.
         BloxStrapSDK.SetRichPresence({
-            details = GameName,
-            state = "GameMode: " .. CurrentGameMode .. " | Rank: " .. RankedSystemData.CurrentRank,
+            details = GameName .. " | " .. CurrentGameMode,
+            state = "Ranked: " .. RankedSystemData.CurrentRank,
             timeStart = TimeStamp,
             timeEnd = TimeStamp + 60,
             largeImage = {
-                assetId = 192042,
-                hoverText = "Sigma"
+                assetId = GameIcons.DiscordRPC.Active,
+                hoverText = GameClientStatus
             },
             smallImage = {
                 assetId = GameGroup.EmblemUrl,
@@ -208,8 +246,74 @@ local function InitializeRBLX()
         })
     end
 
-    LocalPlayer.CharacterAdded:Connect(function(Character)
-        print("Loaded Char.")
+    --//Window focus methods
+    UserInputService.WindowFocusReleased:Connect(function()
+        local AudioProfile = AudioProfiler:GetProfile("FX_Group")
+        AudioProfile:SetVolume(0.15, 1.25)
+
+        GameClientStatus = "Away from game. (Idle)"
+
+        BloxStrapSDK.SetRichPresence({
+            details = GameName .. " | " .. CurrentGameMode,
+            state = "Ranked: " .. RankedSystemData.CurrentRank,
+            timeStart = TimeStamp,
+            timeEnd = TimeStamp + 60,
+            largeImage = {
+                assetId = GameIcons.DiscordRPC.Idle,
+                hoverText = GameClientStatus
+            },
+            smallImage = {
+                assetId = GameGroup.EmblemUrl,
+                hoverText = "BlueVez Studios"
+            }
+        })
+
+        Utilities:OutputLog("Cofigured Discord RichPresence to idle mode.")
+    end)
+
+    UserInputService.WindowFocused:Connect(function()
+        local AudioProfile = AudioProfiler:GetProfile("FX_Group")
+        AudioProfile:SetVolume(1, 1.25)
+
+        GameClientStatus = "Playing a ranked game."
+
+        BloxStrapSDK.SetRichPresence({
+            details = GameName .. " | " .. CurrentGameMode,
+            state = "Ranked: " .. RankedSystemData.CurrentRank,
+            timeStart = TimeStamp,
+            timeEnd = TimeStamp + 60,
+            largeImage = {
+                assetId = GameIcons.DiscordRPC.Active,
+                hoverText = GameClientStatus
+            },
+            smallImage = {
+                assetId = GameGroup.EmblemUrl,
+                hoverText = "BlueVez Studios"
+            }
+        })
+
+        Utilities:OutputLog("Cofigured Discord RichPresence to Online mode.")
+    end)
+
+    LocalPlayer.Idled:Connect(function()
+        GameClientStatus = "Inactive from game."
+
+        BloxStrapSDK.SetRichPresence({
+            details = GameName .. " | " .. CurrentGameMode,
+            state = "Ranked: " .. RankedSystemData.CurrentRank,
+            timeStart = TimeStamp,
+            timeEnd = TimeStamp + 60,
+            largeImage = {
+                assetId = GameIcons.DiscordRPC.Away,
+                hoverText = GameClientStatus
+            },
+            smallImage = {
+                assetId = GameGroup.EmblemUrl,
+                hoverText = "BlueVez Studios"
+            }
+        })
+
+        Utilities:OutputLog("Cofigured Discord RichPresence to Inactive mode.")
     end)
 end
 
@@ -267,6 +371,7 @@ local function CreateLoadingScreen()
 
     --//Core Variables
     local GameBDP = ConverBuildDate(BuidDate)
+    local GamePublishData = GameName .. " - " .. " Build @" ..GameBDP[1] .. " | " .. GameBDP[2]  .. " - Roblox Client Version: " .. "Error?"
 
     --//Intances
     local ScreenGui = Instance.new("ScreenGui", PlayerGui)
@@ -295,12 +400,14 @@ local function CreateLoadingScreen()
         end
     end
 
-    --//Core Roblox UI removers
+    --//Core Roblox UI Setup
+    InitializeSoundGroups()
+
     StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
     Character.PrimaryPart.Anchored = true
 
     --//Core setup
-    print(GameName .. " - " .. " Build @" ..GameBDP[1] .. " | " .. GameBDP[2]  .. " - Roblox Client Version: " .. "Error?")
+    Utilities:OutputLog(GamePublishData)
 
     --//ScreenGui properties
     ScreenGui.Name = "Loading screen"
@@ -433,6 +540,8 @@ local function CreateLoadingScreen()
         if Character.PrimaryPart then
             Character.PrimaryPart.Anchored = false
         end
+
+        Utilities:OutputLog({"Loaded Client in:", tick() - ClientStartTime})
     end
 end
 
@@ -442,7 +551,7 @@ CreateLoadingScreen()
 
 --//Checks if the client is loaded.
 if ClientLoaded == true then
-    Utilities:OutputLog({"Loaded client in:", tick() - ClientStartTime})
+    Utilities:OutputLog({"Loaded core controllers in:", tick() - ClientStartTime})
 
     --//Prototype punch bindings
     --[[local PunchBind = InputTransulator.new("Punch Action",

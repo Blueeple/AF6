@@ -9,12 +9,6 @@ local GameSettings = require(SharedModules.GameSettings)
 
 local ServerSettings = GameSettings.ServerSettings
 
-local CanRun = true
-
-if RunService:IsStudio() == false or RunService:IsClient() and GameSettings.ServerSettings.isUtilityModuleOutputEnabled_Client == false then
-    CanRun = false
-end
-
 local Utility = {}
 
 local function typeCheck(object : Object, newType : Object , errorMessage : string)
@@ -94,19 +88,15 @@ function Utility:AnimateRig(Rig: Model, AnimationName: string)
 end
 
 function Utility:OutputLog(...: {})
-    if ServerSettings.isUtilityModuleOutputEnabled == true and CanRun then
-		local ScriptName = Utility:DecodeFullNameToObject(debug.info(2, "s")).Name
-        local Information = if type(...) == "table" then table.concat(..., " ") else ...
-        print("[" .. ScriptName .. "] - " .. Information)
-    end
+	local ScriptName = Utility:DecodeFullNameToObject(debug.info(2, "s")).Name
+    local Information = if type(...) == "table" then table.concat(..., " ") else ...
+    print("[" .. ScriptName .. "] - " .. Information)
 end
 
 function Utility:OutputWarn(...: {})
-    if ServerSettings.isUtilityModuleOutputEnabled == true and CanRun then
-		local ScriptName = Utility:DecodeFullNameToObject(debug.info(2, "s")).Name
-        local Information = if type(...) == "table" then table.concat(..., " ") else ...
-        warn("[" .. ScriptName .. "] - " .. Information)
-    end
+	local ScriptName = Utility:DecodeFullNameToObject(debug.info(2, "s")).Name
+    local Information = if type(...) == "table" then table.concat(..., " ") else ...
+    warn("[" .. ScriptName .. "] - " .. Information)
 end
 
 return Utility

@@ -43,24 +43,44 @@ export type MenuType = "Menu type?"
 local MenuController = {}
 MenuController.__index = MenuController
 
-function MenuController.New(Type: MenuType, Args: table)
-    --//Variables
+function MenuController.new(Type: MenuType, Args: table)
+    --//Self
     local self = {}
 
-    --//Checks for types
-    if Type == "$Srv" then
-        
-        --//Built in functions
-        function self:Send()
-            
-        end
-        
-        return setmetatable(self, MenuController)
-    elseif Type == "$CL" then
 
-        
-        return setmetatable(self, MenuController)
+    return setmetatable(self, MenuController)
+end
+
+function MenuController:GetAudioProfiler()
+    --//Self
+    local self = {}
+
+    --//Variables
+
+    --//Objects
+    local SoundGroups = SoundService:WaitForChild("AudioProfiles")
+
+    --//Self functions
+    function self:GetProfile(Name: string)
+        if SoundGroups:FindFirstChild(Name) ~= nil then
+            --//Setup
+            local ProfileSetup = {}
+
+            --//Audio profile
+            local Profile: SoundGroup = SoundGroups:FindFirstChild(Name)
+
+            --//ProfileSetup Config
+            function ProfileSetup:SetVolume(Volume: number, Interpolation: number)
+                TweenService:Create(Profile, TweenInfo.new(Interpolation), {Volume = Volume}):Play()
+            end
+
+            return setmetatable (ProfileSetup, self)
+        else
+            return
+        end
     end
+
+    return setmetatable(self, MenuController)
 end
 
 return MenuController
