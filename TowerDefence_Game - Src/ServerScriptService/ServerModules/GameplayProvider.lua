@@ -16,10 +16,6 @@ local ServerBindings = ServerScriptService:FindFirstChild("ServerBindings")
 --//Server module folders
 local Admin = ServerModulesFolder.Admin
 local Cmdr = ServerModulesFolder.Cmdr
-local Core = ServerModulesFolder.Core
-local Management = ServerModulesFolder.Management
-local Network = ServerModulesFolder.Network
-local ServerUtility = ServerModulesFolder.ServerUtility
 
 --//ServerFolders
 local GameMaps = ServerStorage:FindFirstChild("GameMaps")
@@ -32,11 +28,11 @@ local Utilities = require(SharedModulesFolder.Utility)
 
 --//Modules
 local Cmdr = require(ServerModulesFolder.Cmdr)
-local MoveSetManager = require(Management.MoveSetManager)
-local PlayerManager = require(Management.PlayerManager)
-local DynamicContentLoader = require(Network.DynamicContentLoader)
-local RemoteManager = require(Network.RemoteManager)
-local MapConfigurator = require(ServerUtility.MapConfigurator)
+local MoveSetManager = require(ServerModulesFolder.MoveSetManager)
+local PlayerManager = require(ServerModulesFolder.PlayerManager)
+local DynamicContentLoader = require(ServerModulesFolder.DynamicContentLoader)
+local RemoteManager = require(ServerModulesFolder.RemoteManager)
+local MapConfigurator = require(ServerModulesFolder.MapConfigurator)
 
 --//Variables
 local TimerSkipped = false
@@ -158,8 +154,8 @@ local function LoadMap(MapName: string, Directory: Folder)
     if Directory[MapName] ~= nil then
         Utilities:OutputLog({"Found map file for map: ", MapName})
         Map = Directory[MapName]:Clone()
-        Workspace.GameMap:ClearAllChildren()
-        Map.Parent = workspace.GameMap
+        Workspace.Map:ClearAllChildren()
+        Map.Parent = workspace.Map
         PlayerManager:Reload(PlayerManager:AllPlayers())
         SetupServerFightSystem()
         Utilities:OutputLog("Map loading completed.")

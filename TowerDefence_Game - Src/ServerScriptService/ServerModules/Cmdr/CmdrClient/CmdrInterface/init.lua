@@ -14,7 +14,7 @@ return function (Cmdr)
 
 
 	-- Sets the Window.ProcessEntry callback so that we can dispatch our commands out
-	function Window.ProcessEntry(text)
+	function Window.ProcessEntry(text: string)
 		text = Util.TrimString(text)
 
 		if #text == 0 then return end
@@ -27,7 +27,7 @@ return function (Cmdr)
 	end
 
 	-- Sets the Window.OnTextChanged callback so we can update the auto complete
-	function Window.OnTextChanged (text)
+	function Window.OnTextChanged (text: string)
 		local command = Cmdr.Dispatcher:Evaluate(text, Player, true)
 		local arguments = Util.SplitString(text)
 		local commandText = table.remove(arguments, 1)

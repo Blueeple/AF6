@@ -20,19 +20,11 @@ local SharedModulesFolder = ReplicatedStorage:FindFirstChild("SharedModules")
 local ServerModulesFolder = ServerScriptService:FindFirstChild("ServerModules")
 local ServerBindings = ServerScriptService:FindFirstChild("ServerBindings")
 
---//Server module folders
-local Admin = ServerModulesFolder.Admin
-local Cmdr = ServerModulesFolder.Cmdr
-local Core = ServerModulesFolder.Core
-local Management = ServerModulesFolder.Management
-local Network = ServerModulesFolder.Network
-local ServerUtility = ServerModulesFolder.ServerUtility
-
 --//Shared modules
 local Utilities = require(SharedModulesFolder.Utility)
 
 --//Server modules
-local PlayerManager = require(Management.PlayerManager)
+local PlayerManager = require(ServerModulesFolder.PlayerManager)
 
 local MoveSetManager = {
     AvaliableMoveSets = {}
@@ -62,19 +54,5 @@ function MoveSetManager:CreateHitBox(Name: string, ...: {Parent: Instance, Time:
 
     NewHitBox:Destroy()
 end
-
-function MoveSetManager:ProccessMove(Player: Player, Data: table)
-    local PlayerData = PlayerManager:ReadPlayer(Player)
-    print(PlayerData)
-    print(Data)
-end
-
-function MoveSetManager:ProccessUltimate(Player: Player, Data: table)
-    local PlayerData = PlayerManager:ReadPlayer(Player)
-    print(PlayerData)
-    print(Data)
-end
-
-
 
 return MoveSetManager

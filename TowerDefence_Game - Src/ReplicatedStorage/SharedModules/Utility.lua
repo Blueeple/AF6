@@ -35,7 +35,7 @@ function Utility:GenerateGUIDName(MinNumber: number, MaxNumber: number, useDash:
     return string.sub(table.concat(string.split(game.HttpService:GenerateGUID(false), Remove)), MinNumber, MaxNumber)
 end
 
-function Utility:TellName(FullName: string)
+function Utility:DecodeFullNameToObject(FullName: string)
 	local segments = FullName:split(".")
 	local current = game
 
@@ -95,7 +95,7 @@ end
 
 function Utility:OutputLog(...: {})
     if ServerSettings.isUtilityModuleOutputEnabled == true and CanRun then
-        local ScriptName = Utility:TellName(debug.info(2, "s")).Name
+		local ScriptName = Utility:DecodeFullNameToObject(debug.info(2, "s")).Name
         local Information = if type(...) == "table" then table.concat(..., " ") else ...
         print("[" .. ScriptName .. "] - " .. Information)
     end
@@ -103,7 +103,7 @@ end
 
 function Utility:OutputWarn(...: {})
     if ServerSettings.isUtilityModuleOutputEnabled == true and CanRun then
-        local ScriptName = Utility:TellName(debug.info(2, "s")).Name
+		local ScriptName = Utility:DecodeFullNameToObject(debug.info(2, "s")).Name
         local Information = if type(...) == "table" then table.concat(..., " ") else ...
         warn("[" .. ScriptName .. "] - " .. Information)
     end

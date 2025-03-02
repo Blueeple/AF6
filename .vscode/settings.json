@@ -3,5 +3,8 @@
     "[lua]": {
         "editor.autoClosingComments": "languageDefined"
     },
-    "luau-lsp.sourcemap.rojoProjectFile": "Framework.project.json"
+    "luau-lsp.sourcemap.rojoProjectFile": "Framework.project.json",
+    "robloxLsp.diagnostics.globals": [
+        "Version"
+    ]
 }

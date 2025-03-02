@@ -294,4 +294,5 @@ function RemoteManager:RemovePlayerFrom(Player: Player, Remote: RemoteEvent)
 end
 
 Utilities:OutputLog({"Initialized in:", tick() - ModuleStartTime})
+
 return RemoteManager

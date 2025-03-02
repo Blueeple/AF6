@@ -28,15 +28,33 @@ local Camera = workspace.CurrentCamera
 
 --//Client Modules
 local Promise = require(SharedModules.Promise)
-local InputTransulator = require(ControlModules.InputTransulator)
+local InputTransulator = require(ControlModules.InputTranslulatorSDK)
 local Utilities = require(SharedModules.Utility)
 
 --//Variables
 local ModuleStartTime = tick()
 
+--//Exported types
+export type ClassTypes = {
+    DynamicCharacter: any
+}
+
+export type Constructor = {
+    Name: string,
+    Class:  ClassTypes,
+    Settings: any?,
+}
+
 --//Object Oriented Module Constructor
 local PlayerScriptsController = {}
 PlayerScriptsController.__index = PlayerScriptsController
+
+--//Type checks a table.
+local function TypeCheckTable(...: table)
+    if ... ~= nil then
+        
+    end
+end
 
 function PlayerScriptsController:InitializeScirpts()
     local StartTime = tick()
@@ -50,28 +68,18 @@ function PlayerScriptsController:InitializeScirpts()
 end
 
 --//Contructs a new Character controller class.
-function PlayerScriptsController.new(Chracter, ...: {Animations: table, })
-    local args = ...
-    local self = {}
+function PlayerScriptsController:Create(Args: Constructor)
+    --//Variables
+    local Settings = Args.Settings or nil
 
-    local ChracterAnimations = args.Animations
+    local TableTypeCheckings = TypeCheckTable(Settings)
 
-    self.Chracter = Chracter
-    self.Animations = ChracterAnimations
+    if Args and TableTypeCheckings == true then
+        --//Self
+        local self = {}
 
-    print(self)
-
-    return setmetatable(self, PlayerScriptsController)
-end
-
---//
-function PlayerScriptsController:Bind()
-    
-end
-
---//
-function PlayerScriptsController:UnBind()
-
+        --//Self functions
+    end
 end
 
 return PlayerScriptsController

@@ -1,6 +1,8 @@
 --//Services
 local ContentProvider = game:GetService("ContentProvider")
+local GroupService = game:GetService("GroupService")
 local GuiService = game:GetService("GuiService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,18 +32,26 @@ local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Camera = workspace.CurrentCamera
 
 --//Client Modules
+local BloxStrapSDK = require(ControlModules["Bloxstrap-rpc-sdk-v1.1.0"])
 local Cmdr = require(ControlModules:WaitForChild("CmdrClient"))
 local Promise = require(SharedModules.Promise)
 local MenuController = require(ControlModules.MenuController)
 local MoveSetController = require(ControlModules.MoveSetController)
 local PlayerScriptsController = require(ControlModules.PlayerScriptsController)
-local InputTransulator = require(ControlModules.InputTransulator)
-local TopBarPlus = require(ControlModules.Icon)
+local InputTransulator = require(ControlModules.InputTranslulatorSDK)
+local TopBarSDK = require(ControlModules.TopBarSDK)
 local Utilities = require(SharedModules.Utility)
 
 --//Variables
+local BuidDate = MarketplaceService:GetProductInfo(game.PlaceId).Updated or tostring(nil)
 local ClientStartTime = tick()
 local ClientLoaded = false
+local CurrentGameMode = "GameMode?"
+local GameClientVersion = 0
+local GameName = "BattleGrounds"
+local GameGroup = GroupService:GetGroupInfoAsync(game.CreatorId)
+local TimeStamp = os.time()
+local MaxContentFetchTime = 5
 
 --//Tables
 local LoadableContentTypes = {
@@ -56,49 +66,163 @@ local LoadableContentTypes = {
     VideoFrame = true,
 }
 
---//Remote Events
-local PlayerLoadedEvent = NetworkFolder.RemoteEvents:WaitForChild("PlayerJoined")
-local VoteForRankedMapEvent: RemoteEvent = nil
-local RequestForData: RemoteFunction = nil -- remote function...
+local RankedSystemData = {
+    CurrentRank = "Rank?", --Player rank.
+    CurrentRankDivision = "Division?",
+    CurrentRankPercent = 0, --How much percent acheived in current rank.
+    CurrentRankLeaderStat = 0, --What placement does the player have in that rank.
+}
 
---//CallBacks
+local PlayerUserData = nil
+
+--//Remote Events
+local PlayerLoadedEvent = NetworkFolder.RemoteEvents:WaitForChild("PlayerLoaded")
+local RequestForData = NetworkFolder.RemoteEvents:WaitForChild("GetPlayerData")
+local VoteForRankedMapEvent: RemoteEvent = nil
+
+--//Global CallBacks
+
+--//Global Connections
+LocalPlayer.CharacterAdded:Connect(function(CharacterAdded)
+    --//Variable
+    local DynamicCharacter = PlayerScriptsController:Create({
+        Name = LocalPlayer.Name,
+        Class = "DynamicCharacter",
+        Settings = {
+            RenderingFrameRate = 30,
+            RenderSize = 30,
+            FootControllerEnabled = true,
+            DynamicWalkSpeed = true,
+            DynamicWalkSpeedValue = 0.1
+        },
+    })
+
+    --//Objects
+    local Humanoid = CharacterAdded:WaitForChild("Humanoid")
+    local HumanoidRootPart = CharacterAdded:WaitForChild("HumanoidRootPart")
+
+    --//Humanoid
+    Humanoid.WalkSpeed = 1.5
+    Humanoid.JumpHeight = 5.4
+    
+    --//HumanoidDynamic Constructor
+    
+end)
 
 --//Module Initializers
 Cmdr:SetActivationKeys({Enum.KeyCode.F2})
 PlayerScriptsController:InitializeScirpts()
 
---//Initializes game remotes | YOU SHOULD TOTALLY SWITCH TO THE PROMISE MODULE
-local function InitializeRemoteEvent()
-    local StartTime = tick()
+--//Converts Game RBX data to table type
+local function ConverBuildDate(Date :string)
+    return Date:sub(0, 19):split("T")
+end
 
-    VoteForRankedMapEvent = NetworkFolder.RemoteEvents:WaitForChild("VoteRankedMap")
-    RequestForData = NetworkFolder.RemoteFunctions:WaitForChild("GetPlayerData")
+--//Yeilds until userdata is loaded
+local function WaitForUserData(LoadingBar: TextLabel)
+    Utilities:OutputLog({"Loading player data."})
 
+    --//Variables
+    local RequestDataConnection: RBXScriptConnection = nil
+
+    LoadingBar.Text = "Waiting for server reponse..."
+
+    --//Checks if the remote event: RequestForData exists
     if RequestForData then
-        RequestForData:InvokeServer(true)
+        Utilities:OutputLog({"RequestForData remote detected."})
 
-        print(RequestForData)
+        --//Detects when UserData was send to the client
+        RequestDataConnection = RequestForData.OnClientEvent:Connect(function(UserData: any)
+            PlayerUserData = UserData
+            ClientLoaded = true
+        end)
+
+        --//Wait until the client recives a ping from the server DataStore
+        for FetchTime = 0, MaxContentFetchTime do
+            if FetchTime < MaxContentFetchTime and PlayerUserData == nil then
+                LoadingBar.Text = "Pinging server for reponse... [" .. FetchTime .. "]"
+                RequestForData:FireServer(true)
+            elseif FetchTime == MaxContentFetchTime then
+                local Num  = math.random(1, 100)
+
+                if Num == 100 then 
+                    LoadingBar.Text = "'Server not responding' in the M-Massive " .. os.date("%Y") .. " 💔 " 
+                else
+                    LoadingBar.Text = "Server not responding... [" .. FetchTime .. "]"
+                end
+
+                break
+            elseif PlayerUserData ~= nil then
+                break
+            end
+    
+            task.wait(1)
+        end
+    else
+        return
     end
+end
 
-    Utilities:OutputLog({"Initialized Remote in: ", tick() - StartTime})
+--//Initializes game remotesE
+local function InitializeRemoteEvent()
+    --//Variables
+    local StartTime = tick()
+    local RequestDataConnection = nil
+
+    --//Initializes the VoteForRankedMapEvent
+    VoteForRankedMapEvent = NetworkFolder.RemoteEvents:WaitForChild("VoteRankedMap")
+
+    Utilities:OutputLog({"Initialized Remotes in: ", tick() - StartTime})
 end
 
 --//Initializes Topbar plus
 local function LoadTopBarIcons()
     --//Create a TopBarPlus interface.
-    local ExitRankedGame = TopBarPlus.new()
+    local ExitRankedGame = TopBarSDK.new()
+
     :setImage("71173794577999")
     :setEnabled(true)
     :setRight()
-    :bindEvent("Selected", MenuController)
+    --:bindEvent("Selected", MenuController)
 
+end
 
+--//Initializes SDKs for RobloxClient
+local function InitializeRBLX()
+    --//Checks if the game is running on the RBLX Client.
+    if RunService:IsClient() == true then
+        --//Setup the main BloxStrap rpc menus.
+        BloxStrapSDK.SetRichPresence({
+            details = GameName,
+            state = "GameMode: " .. CurrentGameMode .. " | Rank: " .. RankedSystemData.CurrentRank,
+            timeStart = TimeStamp,
+            timeEnd = TimeStamp + 60,
+            largeImage = {
+                assetId = 192042,
+                hoverText = "Sigma"
+            },
+            smallImage = {
+                assetId = GameGroup.EmblemUrl,
+                hoverText = "BlueVez Studios"
+            }
+        })
+    end
+
+    LocalPlayer.CharacterAdded:Connect(function(Character)
+        print("Loaded Char.")
+    end)
 end
 
 --//Setup game menus.
 local function SetupMenus()
     --//Variables
     local StartTime = tick()
+
+    --//Core setup
+    InitializeRBLX()
+    LoadTopBarIcons()
+
+    print(PlayerUserData)
 
     --//Triggers when there is an event from VoteForRankedMap event.
     VoteForRankedMapEvent.OnClientEvent:Connect(function(Data: table)
@@ -128,8 +252,6 @@ local function SetupMenus()
         end
     end)
 
-
-
     --//Completed
     Utilities:OutputLog({"Initialized Menus in:", tick() - StartTime})
 end
@@ -142,7 +264,9 @@ local function CreateLoadingScreen()
     local UnCachedAssets = {}
     local LoadedContent = 0
     local LoadingPercentage = 0
-    local ContentFetchTime = 0
+
+    --//Core Variables
+    local GameBDP = ConverBuildDate(BuidDate)
 
     --//Intances
     local ScreenGui = Instance.new("ScreenGui", PlayerGui)
@@ -175,6 +299,9 @@ local function CreateLoadingScreen()
     StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, false)
     Character.PrimaryPart.Anchored = true
 
+    --//Core setup
+    print(GameName .. " - " .. " Build @" ..GameBDP[1] .. " | " .. GameBDP[2]  .. " - Roblox Client Version: " .. "Error?")
+
     --//ScreenGui properties
     ScreenGui.Name = "Loading screen"
     ScreenGui.IgnoreGuiInset = true
@@ -206,7 +333,7 @@ local function CreateLoadingScreen()
 
     --//LoadingBarFrameText properties
     LoadingBarFrameText.Name = "Percentage"
-    LoadingBarFrameText.Text = "Waiting on downloaded content... " .. ContentFetchTime
+    LoadingBarFrameText.Text = "Waiting on downloaded content... " .. 0
     LoadingBarFrameText.Size = UDim2.fromScale(1, 1)
     LoadingBarFrameText.ZIndex = 2
     LoadingBarFrameText.BackgroundTransparency = 1
@@ -244,15 +371,12 @@ local function CreateLoadingScreen()
     Utilities:OutputLog({"Initialized Loading screen in:", tick() - StartTime})
 
     --//Caching assets to load and stuff
-    for i = 1, 30 do
-        task.wait(1)
-
+    for ContentFetchTime = 0, MaxContentFetchTime do
         local newContent = ContentFolder:GetChildren()
-        ContentFetchTime = i
 
         LoadingBarFrameText.Text = "Waiting on downloaded content... " .. ContentFetchTime
 
-        if ContentFetchTime == 30 and #newContent == 0 then
+        if ContentFetchTime == MaxContentFetchTime and #newContent == 0 then
             LoadingBarFrameText.Text = "Error loading downloaded content."
             LocalPlayer:Kick("Failed to load downloaded content.")
             LocalPlayer:Destroy()
@@ -261,9 +385,10 @@ local function CreateLoadingScreen()
             LoadingBarFrameText.Text = "Content is loading..."
             UnCachedAssets = ContentFolder:GetDescendants()
             ContentFetchTime = 0
-            ClientLoaded = true
             break
         end
+
+        task.wait(1)
     end
 
     LoadingBarFrameText.Text = "Proccessing content..."
@@ -279,18 +404,21 @@ local function CreateLoadingScreen()
 
     LoadingBarFrameText.Text = "Cached all content."
 
+    --//Checks if the AssetsToLoad are above zero
     if #AssetsToLoad > 0 then
-                LoadingBarFrameText.Text = "Loading content - " .. 0 .. "%."
+        LoadingBarFrameText.Text = "Loading content - " .. 0 .. "%."
         ContentProvider:PreloadAsync(AssetsToLoad, ContentProviderCallback)
-    elseif RunService:IsStudio() == true then
+    elseif RunService:IsStudio() == true or #AssetsToLoad == 0 then
         LoadingBarFrameText.Text = "Loading content - " .. 100 .. "%."
         LoadingPercentage = 100
+        
+        task.wait()
+
+        WaitForUserData(LoadingBarFrameText)
     end
 
     --//Does whate every loading screen does
-    if LoadingPercentage == 100 then
-        task.wait(2)
-
+    if LoadingPercentage == 100 and PlayerUserData ~= nil and ClientLoaded == true then
         PlayerLoadedEvent:FireServer(true)
         ScreenGui:Destroy()
         
@@ -316,7 +444,8 @@ CreateLoadingScreen()
 if ClientLoaded == true then
     Utilities:OutputLog({"Loaded client in:", tick() - ClientStartTime})
 
-    local PunchBind = InputTransulator.new("Punch Action",
+    --//Prototype punch bindings
+    --[[local PunchBind = InputTransulator.new("Punch Action",
     {
         PassThroughEnabled = false,
         Enabled = true,
@@ -343,9 +472,9 @@ if ClientLoaded == true then
 
     PunchBind.Activated:Connect(function(Name, Data)
         warn(Name, Data)
-    end)
+    end)]]
 else
-    Utilities:OutputLog({"Failed to load client in:", tick() - ClientStartTime})
+    Utilities:OutputWarn({"Failed to load client in:", tick() - ClientStartTime})
     LocalPlayer:Kick("Failed to load Client.")
     LocalPlayer:Destroy()
 end

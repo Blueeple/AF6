@@ -12,7 +12,7 @@ return {
 		}
 	};
 
-	ClientRun = function(context, text)
+	ClientRun = function(context, text: string)
 		if #text == 0 then
 			return ""
 		end

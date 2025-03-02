@@ -69,7 +69,7 @@ function Argument:Transform()
 		return
 	end
 
-	local rawValue = self.RawValue
+	local rawValue: any = self.RawValue
 	if self.Type.ArgumentOperatorAliases then
 		rawValue = self.Type.ArgumentOperatorAliases[rawValue] or rawValue
 	end
