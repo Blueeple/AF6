@@ -96,7 +96,7 @@ local VoteForRankedMapEvent: RemoteEvent = nil
 
 --//Module Initializers
 Cmdr:SetActivationKeys({Enum.KeyCode.F2})
-PlayerScriptsController:InitializeScirpts()
+--PlayerScriptsController:InitializeScirpts()
 
 --//Converts Game RBX data to table type
 local function ConverBuildDate(Date :string)

@@ -29,12 +29,10 @@ local LoadedPlayers = 0
 --//Modules
 local Cmdr = require(ServerModulesFolder.Cmdr)
 local GameplayProvider = require(ServerModulesFolder.GameplayProvider)
-local MoveSetManager = require(ServerModulesFolder.MoveSetManager)
 local PlayerManager = require(ServerModulesFolder.PlayerManager)
 local DynamicContentLoader = require(ServerModulesFolder.DynamicContentLoader)
 local RemoteManager = require(ServerModulesFolder.RemoteManager)
 local UserDataManager = require(ServerModulesFolder.UserDataManager)
-local MapConfigurator = require(ServerModulesFolder.MapConfigurator)
 
 --//Objects
 local PlayerManagerBinding = Instance.new("BindableEvent", ServerBindings)

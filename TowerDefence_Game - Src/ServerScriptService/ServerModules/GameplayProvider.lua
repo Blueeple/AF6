@@ -116,32 +116,13 @@ local function SetupServerFightSystem()
         }
     })
 
-    local UltimateEvent = RemoteManager.new({
-        Name = "UltimateEvent",
-        Parent = NetworkShared.RemoteEvents,
-        Activated = false,
-        RemoteType = "Event",
-        DebouceTime = 999,
-        FallOffTime = 999,
-        AllowedTypes = {
-            table = true,
-            string = true,
-            Vector3 = true,
-            CFrame = true,
-        }
-    })
-
     task.wait(0.1)
 
     FighterEvent:SetActivation(true)
-    UltimateEvent:SetActivation(true)
 
+    --//Work on the fighting system
     FighterEvent.Event:Connect(function(Player, Data)
-        MoveSetManager:ProccessMove(Player, Data)
-    end)
-
-    UltimateEvent.Event:Connect(function(Player, Data)
-        MoveSetManager:ProccessMove(Player, Data)
+        print(Player, Data)
     end)
 end
 

@@ -27,8 +27,6 @@ local PlayerScripts = LocalPlayer.PlayerScripts
 local Camera = workspace.CurrentCamera
 
 --//Client Modules
-local Promise = require(SharedModules.Promise)
-local InputTransulator = require(ControlModules.InputTranslulatorSDK)
 local Utilities = require(SharedModules.Utility)
 
 --//Variables
@@ -38,7 +36,7 @@ local RunTime = nil
 --//Objects
 local RunServiceBind = Instance.new("BindableEvent")
 
---//Object Oriented Module Constructor FIX THIS SHIT PLEASE!
+--//Object Oriented Module Constructor
 local PlayerScriptsController = {}
 PlayerScriptsController.__index = PlayerScriptsController
 
@@ -54,21 +52,6 @@ local function GetMovementDirection(Humanoid: Humanoid, HumanoidRootPart: BasePa
     return Vector3.new(math.round(Direction.X), math.round(Direction.Y), math.round(Direction.Z))
 end
 
-RunTime = RunService.PreSimulation:Connect(function(deltaTimeSim)
-    for Index, Character in pairs(workspace.Players) do
-        if Character.PrimaryPart ~= nil then
-            local Humanoid: Humanoid = Character:WaitForChild("Humanoid")
-            local HumanoidRootPart: Part = Character.PrimaryPart
-
-            PlayerScriptsController.Characters[Character.Name] = {
-                Character = Character,
-                MoveDirection = GetMovementDirection(Humanoid, HumanoidRootPart),
-                MoveAceleration = HumanoidRootPart.AssemblyLinearVelocity,
-            }
-        end
-    end
-end)
-
 function PlayerScriptsController:InitializeScirpts()
     --//Variables
     local StartTime = tick()
@@ -79,8 +62,22 @@ function PlayerScriptsController:InitializeScirpts()
 
     RbxCharacterSounds.Enabled = false
     RbxCharacterSounds:Destroy()
+
+    RunTime = RunService.PreSimulation:Connect(function(deltaTimeSim)
+        for Index, Character in pairs(workspace.Players:GetChildren()) do
+            if Character.PrimaryPart ~= nil then
+                local Humanoid: Humanoid = Character:WaitForChild("Humanoid")
+                local HumanoidRootPart: Part = Character.PrimaryPart
     
-    PlayerScriptsController["InitializeScirpts"] = nil --Removes the function from the "PlayerScriptsController" 
+                PlayerScriptsController.Characters[Character.Name] = {
+                    Character = Character,
+                    MoveDirection = GetMovementDirection(Humanoid, HumanoidRootPart),
+                    MoveAceleration = HumanoidRootPart.AssemblyLinearVelocity,
+                }
+            end
+        end
+    end)
+
     Utilities:OutputLog({"Initialized Scripts in:", tick()- StartTime})
 end
 
