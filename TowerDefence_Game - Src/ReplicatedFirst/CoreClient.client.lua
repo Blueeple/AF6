@@ -60,6 +60,7 @@ local GameClientStatus = "Playing a ranked game."
 local GameGroup = GroupService:GetGroupInfoAsync(game.CreatorId)
 local TimeStamp = os.time()
 local MaxContentFetchTime = 5
+local VoteTime = 30
 
 --//Tables
 local LoadableContentTypes = {
@@ -281,24 +282,26 @@ local function InitializeRBLX()
     end)
 
     LocalPlayer.Idled:Connect(function()
-        GameClientStatus = "Inactive from game."
+        if RunService:IsStudio() == false then
+            GameClientStatus = "Inactive from game."
 
-        BloxStrapSDK.SetRichPresence({
-            details = GameName .. " | " .. CurrentGameMode,
-            state = "Ranked: " .. RankedSystemData.CurrentRank,
-            timeStart = TimeStamp,
-            timeEnd = TimeStamp + 60,
-            largeImage = {
-                assetId = GameIcons.DiscordRPC.Away,
-                hoverText = GameClientStatus
-            },
-            smallImage = {
-                assetId = GameGroup.EmblemUrl,
-                hoverText = "BlueVez Studios"
-            }
-        })
+            BloxStrapSDK.SetRichPresence({
+                details = GameName .. " | " .. CurrentGameMode,
+                state = "Ranked: " .. RankedSystemData.CurrentRank,
+                timeStart = TimeStamp,
+                timeEnd = TimeStamp + 60,
+                largeImage = {
+                    assetId = GameIcons.DiscordRPC.Away,
+                    hoverText = GameClientStatus
+                },
+                smallImage = {
+                    assetId = GameGroup.EmblemUrl,
+                    hoverText = "BlueVez Studios"
+                }
+            })
 
-        Utilities:OutputLog("Cofigured Discord RichPresence to Inactive mode.")
+            Utilities:OutputLog("Cofigured Discord RichPresence to Inactive mode.")
+        end
     end)
 end
 
@@ -307,35 +310,88 @@ local function SetupMenus()
     --//Variables
     local StartTime = tick()
 
+    --//Objects
+    local MainScreenGui = PlayerGui:WaitForChild("MainScreenGui")
+
+    local VoteSystemMenu: Frame = ControlInterfaces.VoteSystem:WaitForChild("VoteSystem")
+    local TileTemplate: Frame = ControlTemplates.UserInterface:WaitForChild("MapVoteTile")
+
+    local NewVoteSystemMenu = VoteSystemMenu:Clone()
+
+    local Votes: Frame = NewVoteSystemMenu.Main
+    local TitleBar: TextLabel = NewVoteSystemMenu.TitleBar
+
+    local DebouceEnabled = false
+    local DebounceTime = 0.16
+
     --//Core setup
     InitializeRBLX()
     LoadTopBarIcons()
 
     --//Triggers when there is an event from VoteForRankedMap event.
     VoteForRankedMapEvent.OnClientEvent:Connect(function(ServerMessage: ServerVoteSystem)
-        local MainScreenGui = PlayerGui:WaitForChild("MainScreenGui")
-
-        local VoteSystemMenu: Frame = ControlInterfaces.VoteSystem:WaitForChild("VoteSystem")
-        local TileTemplate: Frame = ControlTemplates.UserInterface:WaitForChild("MapVoteTile")
-
         local Command = ServerMessage.Command
         local Input = ServerMessage.Input
-
-        VoteSystemMenu.Parent = MainScreenGui
     
         if Command == "Start" then
-            local Menu: Frame = VoteSystemMenu:Clone()
-            local Votes: Frame = Menu.Main
+            NewVoteSystemMenu.Parent = MainScreenGui
 
             for MapName, Settings in pairs(Input) do
                 local NewTileMap = TileTemplate:Clone()
 
+                local MapNameObject: TextLabel = NewTileMap.MapName
+                local MapImageObject: ImageButton = NewTileMap.MapImage
+
+                NewTileMap.Name = tostring(MapName)
+
+                MapNameObject.Text = tostring(MapName) .. ": 0"
+                MapImageObject.Image = "rbxassetid://5205790785"
+
                 NewTileMap.Parent = Votes
+
+                MapImageObject.Activated:Connect(function()
+                    if DebouceEnabled == false then
+                        DebouceEnabled = true
+
+                        VoteForRankedMapEvent:FireServer({
+                            Command = "Vote",
+                            Input = tostring(MapName)
+                        })
+
+                        task.wait(DebounceTime)
+
+                        DebouceEnabled = false
+                    end
+                end)
+            end
+
+            for TimePassed = 1, VoteTime do
+                task.wait(1)
+                TitleBar.Text = "Select a map in: " .. VoteTime - TimePassed
             end
         elseif Command == "Update" then
+            local MapVotes = {}
 
+            for PlayerName, MapName in pairs(Input) do
+                MapVotes[MapName] = 0
+                MapVotes[MapName] += 1
+            end
+
+            for Index, MapTile in pairs(Votes:GetChildren()) do
+                if MapTile:IsA("CanvasGroup") then
+                    local MapName: string = MapTile.Name
+                    local MapNameObject: TextLabel = MapTile.MapName
+
+                    local MapVote = MapVotes[MapName] or 0
+
+                    MapNameObject.Text = MapName .. " : " .. MapVote
+                end
+            end
         elseif Command == "End" then
+            NewVoteSystemMenu:Destroy()
 
+            VoteSystemMenu = nil
+            TileTemplate = nil
         end
     end)
 

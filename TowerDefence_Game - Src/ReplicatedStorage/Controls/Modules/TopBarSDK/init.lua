@@ -66,7 +66,6 @@ local Janitor = require(iconModule.Packages.Janitor)
 local Utility = require(iconModule.Utility)
 local Attribute = require(iconModule.Attribute)
 local Themes = require(iconModule.Features.Themes)
-local Gamepad = require(iconModule.Features.Gamepad)
 local Overflow = require(iconModule.Features.Overflow)
 local Icon = {}
 Icon.__index = Icon
@@ -164,7 +163,6 @@ end
 
 
 -- SETUP
-task.defer(Gamepad.start, Icon)
 task.defer(Overflow.start, Icon)
 for _, screenGui in pairs(Icon.container) do
 	screenGui.Parent = playerGui

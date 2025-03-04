@@ -198,29 +198,34 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
         Parent = NetworkShared.RemoteEvents,
         Activated = false,
         RemoteType = "Event",
-        DebouceTime = 0.5,
+        DebouceTime = 0.15,
         FallOffTime = 3,
         AllowedTypes = {
             string = true,
+            table = true
         }
     })
 
     VoteRankedMaps.Event:Connect(function(Player: Player, ServerMessage: string)
-        print(Player, ServerMessage)
+        local Command = ServerMessage.Command
+        local Input = ServerMessage.Input
 
-        VoteRankedMaps:Fire(RemoteManager:AllPlayers(), QuickProcessedMaps)
+        PlayerVotes[Player.Name] = Input
+
+        VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {
+            Command = "Update",
+            Input = PlayerVotes
+        })
     end)
 
     VoteRankedMaps:SetActivation(true)
-    
+
     VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {
         Command = "Start",
         Input = QuickProcessedMaps
     })
 
     for Time = 1, CountTime do
-        Utilities:OutputLog({"Starting game in:", CountTime + 1 - Time})
-
         if Time == CountTime or TimerSkipped == true then
             Utilities:OutputLog("Starting vote processing.")
 
@@ -228,7 +233,10 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
 
             LoadMap(newMap, GameMaps.RankedServerMaps)
 
-            VoteRankedMaps:Fire(RemoteManager:AllPlayers(), "End")
+            VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {
+                Command = "End",
+                Input = "null"
+            })
             VoteRankedMaps:Shutdown()
 
             return
