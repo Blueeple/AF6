@@ -38,47 +38,38 @@ local RunTime = nil
 --//Objects
 local RunServiceBind = Instance.new("BindableEvent")
 
---//Exported types
-export type ClassTypes = {
-    DynamicCharacter: any
-}
-
-export type Constructor = {
-    Name: string,
-    Characer: Model,
-    Class:  ClassTypes,
-    Settings: any?,
-}
-
-export type ModuleImports = {
-    Folder: Folder
-}
-
---//Object Oriented Module Constructor
+--//Object Oriented Module Constructor FIX THIS SHIT PLEASE!
 local PlayerScriptsController = {}
 PlayerScriptsController.__index = PlayerScriptsController
 
 PlayerScriptsController.Characters = {}
 
-RunServiceBind.Event:Connect(function(Args: Model)
-    if PlayerScriptsController.Characters[Args.Name] == nil then
-        PlayerScriptsController.Characters[Args.Name] = Args.Character
-    else
-        Utilities:OutputWarn("Failed to add character:", (Args.Character.Name .. ", character already exists!"))
+local function GetMovementDirection(Humanoid: Humanoid, HumanoidRootPart: BasePart): Vector3
+    local forward_direction = HumanoidRootPart.CFrame.LookVector;
+    local right_direction = HumanoidRootPart.CFrame.RightVector;
+        
+    local wishdir = forward_direction * Humanoid.MoveDirection.Z + right_direction * Humanoid.MoveDirection.X;
+    local Direction = wishdir.Unit;
+
+    return Vector3.new(math.round(Direction.X), math.round(Direction.Y), math.round(Direction.Z))
+end
+
+RunTime = RunService.PreSimulation:Connect(function(deltaTimeSim)
+    for Index, Character in pairs(workspace.Players) do
+        if Character.PrimaryPart ~= nil then
+            local Humanoid: Humanoid = Character:WaitForChild("Humanoid")
+            local HumanoidRootPart: Part = Character.PrimaryPart
+
+            PlayerScriptsController.Characters[Character.Name] = {
+                Character = Character,
+                MoveDirection = GetMovementDirection(Humanoid, HumanoidRootPart),
+                MoveAceleration = HumanoidRootPart.AssemblyLinearVelocity,
+            }
+        end
     end
 end)
 
-local function DynamicCharacterHandler(...)
-    --/Variables
-    local Characer = ...
-
-    local Humanoid: Humanoid = Characer:WaitForChild("Humanoid")
-    local HumanoidRootPart: Part = Characer:WaitForChild("HumanoidRootPart")
-
-    RunServiceBind:Fire(Characer)
-end
-
-function PlayerScriptsController:InitializeScirpts(Args: ModuleImports)
+function PlayerScriptsController:InitializeScirpts()
     --//Variables
     local StartTime = tick()
     local RbxCharacterSounds = PlayerScripts:WaitForChild("RbxCharacterSounds")
@@ -91,11 +82,6 @@ function PlayerScriptsController:InitializeScirpts(Args: ModuleImports)
     
     PlayerScriptsController["InitializeScirpts"] = nil --Removes the function from the "PlayerScriptsController" 
     Utilities:OutputLog({"Initialized Scripts in:", tick()- StartTime})
-end
-
---//Contructs a new Character controller class.
-function PlayerScriptsController:Create(Args: Constructor)
-    
 end
 
 return PlayerScriptsController

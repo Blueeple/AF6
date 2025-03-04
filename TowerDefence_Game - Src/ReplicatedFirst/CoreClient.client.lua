@@ -93,23 +93,6 @@ local VoteForRankedMapEvent: RemoteEvent = nil
 --//Global CallBacks
 
 --//Global Connections
-LocalPlayer.CharacterAdded:Connect(function(CharacterAdded)
-    --//Variable
-    local DynamicCharacter = PlayerScriptsController:Create(CharacterAdded)
-
-    --//Objects
-    local Humanoid = CharacterAdded:WaitForChild("Humanoid")
-    local HumanoidRootPart = CharacterAdded:WaitForChild("HumanoidRootPart")
-
-    --//Humanoid
-    Humanoid.WalkSpeed = 1.5
-    Humanoid.JumpHeight = 5.4
-    
-    --//Humanoid death handler
-    Humanoid.Died:Connect(function()
-        DynamicCharacter:Remove()
-    end)
-end)
 
 --//Module Initializers
 Cmdr:SetActivationKeys({Enum.KeyCode.F2})
@@ -534,6 +517,9 @@ local function CreateLoadingScreen()
 
         if Character.PrimaryPart then
             Character.PrimaryPart.Anchored = false
+
+            Character.Humanoid.WalkSpeed = 1.5
+            Character.Humanoid.JumpHeight = 5.4
         end
     end
 end

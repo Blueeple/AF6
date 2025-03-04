@@ -138,11 +138,21 @@ function PlayerManager.new(Player: Player)
     --//Kicks the player
     function self:Kick(...: string)
         Player:Kick(...)
+
+        return
     end
 
     --//Reloads the player
-    function self:Reload()
+    function self:Reload(UseDeath: boolean)
+        local Humanoid: Humanoid = Player.Character:FindFirstChild("Humanoid")
+
+        if UseDeath then
+            Humanoid:TakeDamage(Humanoid.MaxHealth)
+        end
+
         Player:LoadCharacter()
+
+        return
     end
 
     --//Sets the provided settings of the player
@@ -152,6 +162,8 @@ function PlayerManager.new(Player: Player)
         else
             Utilities:OutputWarn({"Settings:", (tostring(Name) .. " does not exist.")})
         end
+
+        return
     end
 
     --//Read the data from the player
@@ -228,21 +240,37 @@ function PlayerManager:Kick(PlayersInGame: {}, KickInformationRaw: {})
 end
 
 --//Reloads all the players passed in the script.
-function PlayerManager:Reload(PlayersInGame: {})
-    local PlayersToReload = if type(PlayersInGame) == "table" then PlayersInGame else Players:FindFirstChild(PlayersInGame)
+function PlayerManager:Reload(PlayersInGame: {}, UseDeath: boolean)
+    local PlayersToReload = if type(PlayersInGame) == "table" then PlayersInGame else Players:FindFirstChild(PlayersInGame.Name)
     Utilities:OutputLog("Reloading players.")
 
     if type(PlayersToReload) == "table" then
         local PlayersTable = PlayersToReload or nil
         for Index, Player in PlayersToReload do
             if Players[Player.Name] then
-                Players[Player.Name]:LoadCharacter()
+                local Humanoid: Humanoid = Player.Character:FindFirstChild("Humanoid")
+
+                if UseDeath then
+                    Humanoid:TakeDamage(Humanoid.MaxHealth)
+                end
+        
+                Player:LoadCharacter()
+        
+                return
             end
         end
     elseif PlayersToReload:IsA("Player") then
         local Player = PlayersToReload
-        if Player then
+        if Player and Player.Character then
+            local Humanoid: Humanoid = Player.Character:FindFirstChild("Humanoid")
+
+            if UseDeath then
+                Humanoid:TakeDamage(Humanoid.MaxHealth)
+            end
+    
             Player:LoadCharacter()
+    
+            return
         end
     end
 end

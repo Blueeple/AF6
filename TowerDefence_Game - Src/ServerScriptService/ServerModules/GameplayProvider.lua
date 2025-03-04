@@ -156,7 +156,7 @@ local function LoadMap(MapName: string, Directory: Folder)
         Map = Directory[MapName]:Clone()
         Workspace.Map:ClearAllChildren()
         Map.Parent = workspace.Map
-        PlayerManager:Reload(PlayerManager:AllPlayers())
+        PlayerManager:Reload(PlayerManager:AllPlayers(), true)
         SetupServerFightSystem()
         Utilities:OutputLog("Map loading completed.")
     else
