@@ -43,6 +43,12 @@ local InputTransulator = require(ControlModules.InputTranslulatorSDK)
 local TopBarSDK = require(ControlModules.TopBarSDK)
 local Utilities = require(SharedModules.Utility)
 
+--//Exported types
+export type ServerVoteSystem = {
+    Command: string,
+    Input: any?
+}
+
 --//Variables
 local BuidDate = MarketplaceService:GetProductInfo(game.PlaceId).Updated or tostring(nil)
 local ClientStartTime = tick()
@@ -306,30 +312,30 @@ local function SetupMenus()
     LoadTopBarIcons()
 
     --//Triggers when there is an event from VoteForRankedMap event.
-    VoteForRankedMapEvent.OnClientEvent:Connect(function(Data: table)
-        local MainUX = PlayerGui:WaitForChild("MainGameUX")
+    VoteForRankedMapEvent.OnClientEvent:Connect(function(ServerMessage: ServerVoteSystem)
+        local MainScreenGui = PlayerGui:WaitForChild("MainScreenGui")
+
+        local VoteSystemMenu: Frame = ControlInterfaces.VoteSystem:WaitForChild("VoteSystem")
+        local TileTemplate: Frame = ControlTemplates.UserInterface:WaitForChild("MapVoteTile")
+
+        local Command = ServerMessage.Command
+        local Input = ServerMessage.Input
+
+        VoteSystemMenu.Parent = MainScreenGui
     
-        if Data ~= true and Data["Task"] == "Create" then
-            local VotingUiTemplate = ControlTemplates:WaitForChild("Template_RankedMapVote")
-            local VotingUI = ControlInterfaces:WaitForChild("VoteSystem"):Clone()
-            VotingUI.Parent = MainUX
-    
-            for MapName, Settings in pairs(Data["Maps"]) do
-                local newTemplate = VotingUiTemplate:Clone()
-                newTemplate.Name = MapName
-                newTemplate.MapName.Text = MapName
-    
-                newTemplate.Parent = VotingUI
-    
-                newTemplate.VoteMap.Activated:Connect(function()
-                    VoteForRankedMapEvent:FireServer(MapName)
-                end)
+        if Command == "Start" then
+            local Menu: Frame = VoteSystemMenu:Clone()
+            local Votes: Frame = Menu.Main
+
+            for MapName, Settings in pairs(Input) do
+                local NewTileMap = TileTemplate:Clone()
+
+                NewTileMap.Parent = Votes
             end
-        else
-            if MainUX["VoteSystem"] ~= nil then
-                MainUX["VoteSystem"]:Destroy()
-                --MoveSetController:InitializeRemotes()
-            end
+        elseif Command == "Update" then
+
+        elseif Command == "End" then
+
         end
     end)
 

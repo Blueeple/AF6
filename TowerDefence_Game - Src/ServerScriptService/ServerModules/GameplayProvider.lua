@@ -185,7 +185,7 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
 
     local args = ...
 
-    local CountTime = 5
+    local CountTime = 30
 
     local DynamicStore = args["StoreKey"]
 
@@ -205,23 +205,32 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
         }
     })
 
-    VoteRankedMaps.Event:Connect(function(Player: Player, Data: string)
-        PlayerVotes[Player.Name] = Data
+    VoteRankedMaps.Event:Connect(function(Player: Player, ServerMessage: string)
+        print(Player, ServerMessage)
+
+        VoteRankedMaps:Fire(RemoteManager:AllPlayers(), QuickProcessedMaps)
     end)
 
     VoteRankedMaps:SetActivation(true)
-    VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {Task = "Create", Maps = QuickProcessedMaps})
+    
+    VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {
+        Command = "Start",
+        Input = QuickProcessedMaps
+    })
 
     for Time = 1, CountTime do
         Utilities:OutputLog({"Starting game in:", CountTime + 1 - Time})
 
         if Time == CountTime or TimerSkipped == true then
             Utilities:OutputLog("Starting vote processing.")
+
             local newMap = TallyVotes(QuickProcessedMaps)
-            task.wait()
+
             LoadMap(newMap, GameMaps.RankedServerMaps)
-            VoteRankedMaps:Fire(RemoteManager:AllPlayers(), true)
+
+            VoteRankedMaps:Fire(RemoteManager:AllPlayers(), "End")
             VoteRankedMaps:Shutdown()
+
             return
         end
 
