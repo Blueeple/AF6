@@ -185,7 +185,7 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
 
     local args = ...
 
-    local CountTime = 30
+    local CountTime = 11
 
     local DynamicStore = args["StoreKey"]
 
@@ -222,7 +222,8 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
 
     VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {
         Command = "Start",
-        Input = QuickProcessedMaps
+        Input = QuickProcessedMaps,
+        VoteTime = CountTime
     })
 
     for Time = 1, CountTime do

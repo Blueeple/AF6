@@ -60,7 +60,6 @@ local GameClientStatus = "Playing a ranked game."
 local GameGroup = GroupService:GetGroupInfoAsync(game.CreatorId)
 local TimeStamp = os.time()
 local MaxContentFetchTime = 5
-local VoteTime = 30
 
 --//Tables
 local LoadableContentTypes = {
@@ -332,9 +331,12 @@ local function SetupMenus()
     VoteForRankedMapEvent.OnClientEvent:Connect(function(ServerMessage: ServerVoteSystem)
         local Command = ServerMessage.Command
         local Input = ServerMessage.Input
+
+        local VoteTime = 0
     
         if Command == "Start" then
             NewVoteSystemMenu.Parent = MainScreenGui
+            VoteTime = ServerMessage.VoteTime - 1
 
             for MapName, Settings in pairs(Input) do
                 local NewTileMap = TileTemplate:Clone()
@@ -344,7 +346,7 @@ local function SetupMenus()
 
                 NewTileMap.Name = tostring(MapName)
 
-                MapNameObject.Text = tostring(MapName) .. ": 0"
+                MapNameObject.Text = tostring(MapName) .. ":  0"
                 MapImageObject.Image = "rbxassetid://5205790785"
 
                 NewTileMap.Parent = Votes
@@ -384,7 +386,7 @@ local function SetupMenus()
 
                     local MapVote = MapVotes[MapName] or 0
 
-                    MapNameObject.Text = MapName .. " : " .. MapVote
+                    MapNameObject.Text = MapName .. " :  " .. MapVote
                 end
             end
         elseif Command == "End" then
