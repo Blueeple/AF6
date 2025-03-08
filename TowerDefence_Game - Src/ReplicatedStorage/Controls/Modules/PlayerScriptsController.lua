@@ -32,6 +32,7 @@ local Utilities = require(SharedModules.Utility)
 --//Variables
 local ModuleStartTime = tick()
 local RunTime = nil
+local LocalCharacterData = {}
 
 --//Objects
 local RunServiceBind = Instance.new("BindableEvent")
@@ -68,17 +69,26 @@ function PlayerScriptsController:InitializeScirpts()
             if Character.PrimaryPart ~= nil then
                 local Humanoid: Humanoid = Character:WaitForChild("Humanoid")
                 local HumanoidRootPart: Part = Character.PrimaryPart
+
+                local MoveAceleration = HumanoidRootPart.AssemblyLinearVelocity
+                local MoveDirection = GetMovementDirection(Humanoid, HumanoidRootPart)
     
                 PlayerScriptsController.Characters[Character.Name] = {
                     Character = Character,
-                    MoveDirection = GetMovementDirection(Humanoid, HumanoidRootPart),
-                    MoveAceleration = HumanoidRootPart.AssemblyLinearVelocity,
+                    MoveAceleration = MoveAceleration,
+                    MoveDirection = MoveDirection,
                 }
+
+                
             end
         end
     end)
 
     Utilities:OutputLog({"Initialized Scripts in:", tick()- StartTime})
+end
+
+function PlayerScriptsController:SetLocalCharcterData(...: any?)
+    LocalCharacterData = ...
 end
 
 return PlayerScriptsController

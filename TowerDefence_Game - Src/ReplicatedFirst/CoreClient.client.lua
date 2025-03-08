@@ -101,6 +101,7 @@ local VoteForRankedMapEvent: RemoteEvent = nil
 --//Global Connections
 
 --//Module Initializers
+MenuController:ScaleUserInterface(ReplicatedStorage.Controls)
 Cmdr:SetActivationKeys({Enum.KeyCode.F2})
 --PlayerScriptsController:InitializeScirpts()
 
@@ -141,6 +142,7 @@ local function WaitForUserData(LoadingBar: TextLabel)
 
                 break
             elseif PlayerUserData ~= nil then
+                warn(PlayerUserData)
                 break
             end
     
@@ -194,7 +196,7 @@ local function InitializeSoundGroups()
     GroupFolder.Name = "AudioProfiles"
     GroupFolder.Parent = SoundService
 
-    for Index, FXG in pairs(FXGroups) do
+    for Index, FXG in FXGroups do
         FXG.Parent = GroupFolder
         FXG.Name = tostring(Index)
         FXG.Volume = 1
@@ -203,13 +205,27 @@ local function InitializeSoundGroups()
     return FXGroups
 end
 
+--//Loads a moveset to the client GET THE ANIMATIONS TO WORK
+local function LoadMoveSet()
+    local Humanoid: Humanoid = LocalPlayer.Character:WaitForChild("Humanoid")
+
+    Humanoid.WalkSpeed = 5
+    Humanoid.JumpHeight = 5.6
+
+    ContentFolder:WaitForChild("Animations"):Clone().Parent = Humanoid
+
+    PlayerScriptsController:SetLocalCharcterData({
+        WalkSpeed = 16
+    })
+end
+
 --//Initializes SDKs for RobloxClient
 local function InitializeRBLX()
     --//Objects
     local AudioProfiler = MenuController:GetAudioProfiler()
 
     --//Checks if the game is running on the RBLX Client.
-    if RunService:IsStudio() == false then
+    if RunService:IsStudio() == false and UserInputService.KeyboardEnabled == true then
         --//Setup the main BloxStrap rpc menus.
         BloxStrapSDK.SetRichPresence({
             details = GameName .. " | " .. CurrentGameMode,
@@ -229,7 +245,7 @@ local function InitializeRBLX()
 
     --//Window focus methods
     UserInputService.WindowFocusReleased:Connect(function()
-        if RunService:IsStudio() == false then
+        if RunService:IsStudio() == false and UserInputService.KeyboardEnabled == true then
             local AudioProfile = AudioProfiler:GetProfile("FX_Group")
             AudioProfile:SetVolume(0.15, 1.25)
 
@@ -255,7 +271,7 @@ local function InitializeRBLX()
     end)
 
     UserInputService.WindowFocused:Connect(function()
-        if RunService:IsStudio() == false then
+        if RunService:IsStudio() == false and UserInputService.KeyboardEnabled == true then
             local AudioProfile = AudioProfiler:GetProfile("FX_Group")
             AudioProfile:SetVolume(1, 1.25)
 
@@ -281,7 +297,7 @@ local function InitializeRBLX()
     end)
 
     LocalPlayer.Idled:Connect(function()
-        if RunService:IsStudio() == false then
+        if RunService:IsStudio() == false and UserInputService.KeyboardEnabled == true then
             GameClientStatus = "Inactive from game."
 
             BloxStrapSDK.SetRichPresence({
@@ -368,8 +384,8 @@ local function SetupMenus()
             end
 
             for TimePassed = 1, VoteTime do
-                task.wait(1)
                 TitleBar.Text = "Select a map in: " .. VoteTime - TimePassed
+                task.wait(1)
             end
         elseif Command == "Update" then
             local MapVotes = {}
@@ -390,10 +406,24 @@ local function SetupMenus()
                 end
             end
         elseif Command == "End" then
+            --//Make a fake loading screen here.
+            local Frame = Instance.new("Frame", MainScreenGui)
+
             NewVoteSystemMenu:Destroy()
 
             VoteSystemMenu = nil
             TileTemplate = nil
+
+            --//Frame properties
+            Frame.Name = "MapLoadingScreen"
+            Frame.Size = UDim2.fromScale(1, 1)
+            Frame.Visible = false
+
+            task.wait(3)
+
+            LoadMoveSet()
+
+            Frame:Destroy()
         end
     end)
 
@@ -559,11 +589,11 @@ local function CreateLoadingScreen()
     elseif RunService:IsStudio() == true or #AssetsToLoad == 0 then
         LoadingBarFrameText.Text = "Loading content - " .. 100 .. "%."
         LoadingPercentage = 100
-        
-        task.wait()
 
         WaitForUserData(LoadingBarFrameText)
     end
+
+    
 
     --//Does whate every loading screen does
     if LoadingPercentage == 100 and PlayerUserData ~= nil and ClientLoaded == true then
@@ -595,36 +625,6 @@ CreateLoadingScreen()
 --//Checks if the client is loaded.
 if ClientLoaded == true then
     Utilities:OutputLog({"Loaded core controllers in:", tick() - ClientStartTime})
-
-    --//Prototype punch bindings
-    --[[local PunchBind = InputTransulator.new("Punch Action",
-    {
-        PassThroughEnabled = false,
-        Enabled = true,
-    },
-    {
-        Keyboard = {
-            Major = Enum.KeyCode.J,
-            Alt = nil,
-            EnmulateMouse = Enum.UserInputType.MouseButton1
-        },
-        Mobile = {
-            Template = ControlTemplates.Mobile.RobloxDefaut,
-            Properties = {
-                Position = UDim2.fromScale(0, 0),
-                Size = UDim2.fromOffset(0, 0),
-            },
-        },
-        Console = {
-            Major = Enum.KeyCode.ButtonX,
-            Alt = Enum.KeyCode.ButtonR3,
-            Auctuation = 0.01,
-        }
-    })
-
-    PunchBind.Activated:Connect(function(Name, Data)
-        warn(Name, Data)
-    end)]]
 else
     Utilities:OutputWarn({"Failed to load client in:", tick() - ClientStartTime})
     LocalPlayer:Kick("Failed to load Client.")

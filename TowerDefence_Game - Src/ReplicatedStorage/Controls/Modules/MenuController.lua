@@ -33,15 +33,35 @@ local Utilities = require(SharedModules.Utility)
 --//Variables
 local ClientStartTime = tick()
 local ClientLoaded = false
+local PcResolution = 1000
 
---//Remotes
-local 
+--//Objects
+local Camera = workspace.CurrentCamera
 
 --//Custom Types
 export type MenuType = "Menu type?"
 
 local MenuController = {}
 MenuController.__index = MenuController
+
+function MenuController:ScaleUserInterface(GuiObject: GuiObject)
+    local Resolution_X, Resolution_Y = Camera.ViewportSize.X, Camera.ViewportSize.Y
+    local AspectRatio = (Resolution_X / Resolution_Y)
+    local UiScale = (Resolution_Y / Resolution_X)
+
+    if Resolution_X > PcResolution then
+        Utilities:OutputLog("Detected a large screen device.")
+        UiScale = (UiScale * AspectRatio)
+    end
+
+    for i, UiTool in GuiObject:GetDescendants() do
+        if UiTool:IsA("UIScale") then
+            UiTool.Scale = UiScale
+        elseif UiTool:IsA("UIAspectRatioConstraint") then
+            UiTool.AspectRatio = AspectRatio
+        end
+    end
+end
 
 function MenuController.new(Type: MenuType, Args: table)
     --//Self

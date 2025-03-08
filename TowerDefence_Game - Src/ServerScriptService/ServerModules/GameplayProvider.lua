@@ -35,6 +35,7 @@ local RemoteManager = require(ServerModulesFolder.RemoteManager)
 local MapConfigurator = require(ServerModulesFolder.MapConfigurator)
 
 --//Variables
+local CountTime = 10
 local TimerSkipped = false
 local isPlayerVotingAllowed = false
 
@@ -104,7 +105,7 @@ local function SetupServerFightSystem()
     local FighterEvent = RemoteManager.new({
         Name = "FighterEvent",
         Parent = NetworkShared.RemoteEvents,
-        Activated = false,
+        Activated = true,
         RemoteType = "Event",
         DebouceTime = 0.5,
         FallOffTime = 3,
@@ -115,10 +116,6 @@ local function SetupServerFightSystem()
             CFrame = true,
         }
     })
-
-    task.wait(0.1)
-
-    FighterEvent:SetActivation(true)
 
     --//Work on the fighting system
     FighterEvent.Event:Connect(function(Player, Data)
@@ -135,10 +132,21 @@ local function LoadMap(MapName: string, Directory: Folder)
     if Directory[MapName] ~= nil then
         Utilities:OutputLog({"Found map file for map: ", MapName})
         Map = Directory[MapName]:Clone()
+
+        for Index, Part: BasePart in pairs(Map:GetDescendants()) do
+            if Part:IsA("BasePart") or Part:IsA("MeshPart") then
+                Part.CanTouch = false
+                Part.CanQuery = false
+                Part.EnableFluidForces = false
+            end
+        end
+
         Workspace.Map:ClearAllChildren()
         Map.Parent = workspace.Map
         PlayerManager:Reload(PlayerManager:AllPlayers(), true)
+
         SetupServerFightSystem()
+        
         Utilities:OutputLog("Map loading completed.")
     else
         Utilities:OutputWarn({"Failed to load map:", MapName})
@@ -185,8 +193,6 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
 
     local args = ...
 
-    local CountTime = 11
-
     local DynamicStore = args["StoreKey"]
 
     MapsAvailable = MapConfigurator:ScanForMaps(MapScanParams, GameMaps.RankedServerMaps)
@@ -223,21 +229,24 @@ function GameplayProvider.StartLobby(...: {StoreKey: table})
     VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {
         Command = "Start",
         Input = QuickProcessedMaps,
-        VoteTime = CountTime
+        VoteTime = CountTime + 1
     })
 
-    for Time = 1, CountTime do
-        if Time == CountTime or TimerSkipped == true then
+    for Time = 1, CountTime + 1 do
+        if Time == CountTime + 1 or TimerSkipped == true then
             Utilities:OutputLog("Starting vote processing.")
 
             local newMap = TallyVotes(QuickProcessedMaps)
-
-            LoadMap(newMap, GameMaps.RankedServerMaps)
 
             VoteRankedMaps:Fire(RemoteManager:AllPlayers(), {
                 Command = "End",
                 Input = "null"
             })
+
+            task.wait()
+
+            LoadMap(newMap, GameMaps.RankedServerMaps)
+
             VoteRankedMaps:Shutdown()
 
             return

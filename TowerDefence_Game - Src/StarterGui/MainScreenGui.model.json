@@ -2,6 +2,7 @@
   "ClassName": "ScreenGui",
   "Properties": {
     "IgnoreGuiInset": true,
-    "ResetOnSpawn": false
+    "ResetOnSpawn": false,
+    "ZIndexBehavior": "Sibling"
   }
 }

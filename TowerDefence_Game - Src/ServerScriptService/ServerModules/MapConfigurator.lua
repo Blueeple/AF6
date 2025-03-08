@@ -11,7 +11,7 @@ local MapModule = {}
 MapModule.__index = MapModule
 
 local function SafeCheckMap(Map)
-    for Index, MapFile in ipairs(Map:GetDescendants()) do
+    for Index, MapFile in Map:GetDescendants() do
         if MapFile.ClassName:match("Script") == true then
             MapFile:Destroy()
             Utilities:OutputWarn("[Error]: Map named: " .. Map.Name .. " has a potential virus destroyed.")

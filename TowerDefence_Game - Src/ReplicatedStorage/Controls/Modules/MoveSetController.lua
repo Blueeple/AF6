@@ -5,9 +5,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 --//Client folders
-local ReplicatedAssetsFolder = ReplicatedStorage:WaitForChild("ReplicatedAssets")
 local ControlsFolder = ReplicatedStorage:WaitForChild("Controls")
-local NetworkFolder = ReplicatedStorage:WaitForChild("Network")
 local ControlModules = ControlsFolder:WaitForChild("Modules")
 local ControlTemplates = ControlsFolder:WaitForChild("Templates")
 local ControlInterfaces = ControlsFolder:WaitForChild("Interfaces")
@@ -57,30 +55,32 @@ local MoveSetController = {}
 local function SetUpInputKeybinds()
     KeybindsStartTime = tick()
 
-    local MoveSet_M1 = InputTransulator.new("M1_Key", {
-        MappedInputKey = "J",
-        AltMapInputKey = "L",
-        ConsoleKeyMapping = "ButtonX",
-        MobileTemplate = ControlTemplates.Mobile.RobloxDefaut,
+    CtrlKey_ShitLock = InputTransulator.new("ShiftLock",
+    {
+        PassThroughEnabled = false,
+        Enabled = true,
+    },
+    {
+        Keyboard = {
+            Major = Enum.KeyCode.LeftControl,
+            Alt = nil,
+            EnmulateMouse = nil
+        },
+        Mobile = {
+            Template = ControlTemplates.Mobile.RobloxDefaut,
+            Properties = {
+                Position = UDim2.fromScale(0, 0),
+                Size = UDim2.fromOffset(0, 0),
+            },
+        },
+        Console = {
+            Major = Enum.KeyCode.ButtonX,
+            Alt = Enum.KeyCode.ButtonR3,
+            Auctuation = 0.01,
+        }
     })
 
-    MoveSet_M1.Activated:Connect(function(InputData: table)
-        if FightingEnabled == true then
-            FigtherRemoteEvent:FireServer({
-                Type = "",
-                CFrame = Vector3.new(0, 0, 0),
-            })
-        end
-    end)
-
-    CtrlKey_ShitLock = InputTransulator.new("ShiftLock", {
-        MappedInputKey = "LeftControl",
-        AltMapInputKey = "H",
-        ConsoleKeyMapping = "DPadLeft",
-        MobileTemplate = ControlTemplates.Mobile.RobloxDefaut,
-    })
-
-    CtrlKey_ShitLock.Activated:Connect(function(InputData: table)
+    CtrlKey_ShitLock.Activated:Connect(function(Name: string, InputData: table)
         ShiftLockEnabled = not ShiftLockEnabled
         
         if ShiftLockEnabled and PlayerCharacterInfo.Character ~= nil and PlayerCharacterInfo.Humanoid ~= nil then
@@ -140,8 +140,12 @@ end
 
 --//Initializes the module.
 function MoveSetController:Initialize()
-    InputTransulator = require(ControlModules.InputTransulator)
+    InputTransulator = require(ControlModules.InputTranslulatorSDK)
     SetUpInputKeybinds()
+
+    LocalPlayer.CharacterAdded:Connect(function(character)
+        InitializeCharacter(character)
+    end)
 
     Utilities:OutputLog({"Initialized core controllers in:", tick() - ModuleStartTime})
 end

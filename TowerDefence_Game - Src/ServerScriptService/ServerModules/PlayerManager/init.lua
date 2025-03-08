@@ -178,6 +178,7 @@ function PlayerManager.new(Player: Player)
     if Player.Character == nil then
         Player:LoadCharacter()
         Player.Character.Parent = PlayersFolder
+        SetupCharacter(Player.Character, Player.Character:FindFirstChild("Humanoid"))
     end
 
     --//Checks for when the player's character is added
@@ -187,7 +188,7 @@ function PlayerManager.new(Player: Player)
 
         SetupCharacter(Character, Humanoid)
 
-        RootPart.Transparency = 0.5
+        RootPart.Transparency = 1
         RootPart.Color = Color3.fromRGB(76, 63, 255)
 
         Humanoid.Died:Once(function()
