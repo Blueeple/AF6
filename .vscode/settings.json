@@ -6,5 +6,6 @@
     "luau-lsp.sourcemap.rojoProjectFile": "Framework.project.json",
     "robloxLsp.diagnostics.globals": [
         "Version"
-    ]
+    ],
+    "discord.enabled": true
 }

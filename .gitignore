@@ -1,8 +1,3 @@
-# Project place file
-/Tower Defence Game - V3.rbxlx
-
-# Roblox Studio lock files
-/*.rbxlx.lock
-/*.rbxl.lock
 /*.vscode
-/*node_modules
+/*.VSCodeCounter
+/DelayPatcherV1.client.lua

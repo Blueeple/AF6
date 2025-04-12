@@ -1,37 +1,26 @@
 {
-  "name": "Framework",
+  "name": "Doom Spire Game",
   "tree": {
     "$className": "DataModel",
 
     "ReplicatedStorage": {
-      "$path": "TowerDefence_Game - Src/ReplicatedStorage"
+      "$path": "Source/Shared"
     },
 
     "ReplicatedFirst": {
-      "$path": "TowerDefence_Game - Src/ReplicatedFirst"
+      "$path": "Source/Client"
     },
 
     "ServerScriptService": {
-        "$path": "TowerDefence_Game - Src/ServerScriptService"
+        "$path": "Source/Server"
     },
     
     "ServerStorage": {
-      "$path": "TowerDefence_Game - Src/ServerStorage"
+      "$path": "Source/Resources"
     },
 
     "StarterGui": {
-      "$path": "TowerDefence_Game - Src/StarterGui"
-    },
-
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "$path": "TowerDefence_Game - Src/StarterPlayerScripts"
-      }
-    },
-    "SoundService": {
-      "$properties": {
-        "RespectFilteringEnabled": true
-      }
+      "$path": "Source/Interface"
     }
   }
 }

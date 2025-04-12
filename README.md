@@ -1,10 +1,11 @@
-# Combat game
-Made with [Rojo](https://github.com/rojo-rbx/rojo)
+#KNOCK RIFT ARENA
 
-## Building the game from scratch here's the terminal command. (Some assets my NOT be avalible)
+##Notices
+* Built using Rojo 7.4.4
+* Vs Code configs are packaged
+* Model files? You don't
 
-```bash
-rojo build -o "Mushroom TD - Mob Rewrite.rbxlx"
-```
-
-For more help, check out [the Rojo documentation](https://rojo.space/docs).
+##This version has new SDK versions.
+* Topbar-Plus
+* BloxStrapRPC
+* RemoteManager DV2
