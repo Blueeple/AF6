@@ -1,3 +1,0 @@
-return {
-    RespawningEnabled = true
-}

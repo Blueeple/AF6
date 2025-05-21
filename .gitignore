@@ -1,3 +1,8 @@
-/*.vscode
-/*.VSCodeCounter
-/DelayPatcherV1.client.lua
+*.vscode
+*.VSCodeCounter
+
+sourcemap.json
+wally.lock
+
+Packages/
+ServerPackages/
