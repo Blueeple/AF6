@@ -1,7 +1,0 @@
-{
-
-    "luau-lsp.sourcemap.rojoProjectFile": "Game.project.json",
-    "discord.enabled": true,
-    "luau-lsp.sourcemap.rojoPath": "aftman.toml",
-    "luau-lsp.sourcemap.generatorCommand": "rojo sourcemap --watch Game.project.json --output sourcemap.json",
-}
