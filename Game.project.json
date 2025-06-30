@@ -9,23 +9,22 @@
       },
       "Packages":{
         "$path": "Packages"
+      },
+      "CustomPackages": {
+        "$path": "CustomPackages"
       }
     },
 
     "ServerScriptService": {
-      "Server": {
-        "$path": "src/server"
-      },
+      "$path": "src/server",
       "ServerPackages":{
         "$path": "ServerPackages"
       }
     },
 
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "Client": {
-          "$path": "src/client"
-        }
+    "ReplicatedFirst": {
+      "Client": {
+        "$path": "src/client"
       }
     }
   }

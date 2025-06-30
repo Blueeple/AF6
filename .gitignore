@@ -1,8 +1,9 @@
-*.vscode
-*.VSCodeCounter
+# Ignore all .vscode folders anywhere
+.vscode/
 
+# Or (equivalent)
+**/.vscode/
+
+# Common stuff
 sourcemap.json
 wally.lock
-
-Packages/
-ServerPackages/
