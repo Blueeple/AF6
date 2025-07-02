@@ -4,6 +4,7 @@ export type CustomInputAction = {
 	ActionName: string,
 	InputAction: InputAction,
 	BindKeyboard: (KeyCode: Enum.KeyCode) -> (),
+	BindAltKeyboard: (KeyCode: Enum.KeyCode) -> (),
 	BindGamepad: (Button: Enum.KeyCode) -> (),
 	SetEnabled: (Enabled: boolean) -> (),
 	SetMobileUI: (MobileUI: GuiButton) -> (),
@@ -22,12 +23,7 @@ local InputActionFramework = {}
 	It allows you to create custom input actions, bind them to keyboard and gamepad inputs,
 	and handle their pressed and released events.
 ]]
-function InputActionFramework.new(
-	ActionName: string,
-	ActionType: Enum.InputActionType,
-	InputPrioty: number,
-	Tag: string?
-): CustomInputAction
+function InputActionFramework.new(ActionName: string, ActionType: Enum.InputActionType, InputPrioty: number, Tag: string?): CustomInputAction
 	-- Assertions
 	assert(ActionName and type(ActionName) == "string", "ActionName must be a non-empty string.")
 	assert(ActionType and typeof(ActionType) == "EnumItem", "ActionType must be a valid Enum.InputActionType.")
@@ -48,6 +44,10 @@ function InputActionFramework.new(
 	local KeyboardAction = Instance.new("InputBinding")
 	KeyboardAction.Name = ActionName .. "Keyboard"
 	KeyboardAction.Parent = InputAction
+
+	local AltKeyboardAction = Instance.new("InputBinding")
+	AltKeyboardAction.Name = ActionName .. "AltKeyboard"
+	AltKeyboardAction.Parent = InputAction
 
 	local GamepadAction = Instance.new("InputBinding")
 	GamepadAction.Name = ActionName .. "Gamepad"
@@ -89,6 +89,10 @@ function InputActionFramework.new(
     ]]
 	function self.BindKeyboard(KeyCode: Enum.KeyCode)
 		KeyboardAction.KeyCode = KeyCode
+	end
+
+	function self.BindAltKeyboard(KeyCode: Enum.KeyCode)
+		AltKeyboardAction.KeyCode = KeyCode
 	end
 
 	--[[

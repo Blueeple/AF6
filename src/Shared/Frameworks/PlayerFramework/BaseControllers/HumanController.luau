@@ -10,7 +10,7 @@ local FrameworkFolder = ReplicatedStorage.Shared:FindFirstChild("Frameworks")
 local _CachedFolder = ReplicatedStorage:WaitForChild("Cached")
 
 -- Modules
-local InputActionFramework = require(FrameworkFolder:WaitForChild("InputActionFramework"))
+local _InputActionFramework = require(FrameworkFolder:WaitForChild("InputActionFramework"))
 
 -- Variables
 local MaxLookUpAngle = 85
@@ -22,7 +22,10 @@ local CameraX = 0
 local CameraY = 0
 
 -- Functions constuctor
-return function(Camera: Camera, BindName: string)
+return function(Camera: Camera, BindName: string): { Disconnect: () -> () }
+	-- self
+	local self = {}
+
 	-- Initalize
 	Camera.CameraType = Enum.CameraType.Scriptable
 	Camera.CFrame = CFrame.new(0, 10, 0)
@@ -41,5 +44,16 @@ return function(Camera: Camera, BindName: string)
 		Camera.CFrame = CFrame.new(0, 10, 0) * CameraRotation
 	end)
 
+	-- Methods
+	--[[
+		Disconnects the controller and resets the camera to default.
+	]]
+	function self.Disconnect()
+		RunService:UnbindFromRenderStep(BindName)
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		Camera.CameraType = Enum.CameraType.Custom
+	end
+
 	print("[HumanController] - Initialized.")
+	return setmetatable(self, nil)
 end

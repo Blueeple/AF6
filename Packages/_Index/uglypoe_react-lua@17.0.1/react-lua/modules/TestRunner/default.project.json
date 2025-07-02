@@ -1,8 +1,0 @@
-{
-  "name": "react-lua",
-  "tree": {
-    "Src": {
-      "$path": "src"
-    }
-  }
-}

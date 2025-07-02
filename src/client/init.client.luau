@@ -1,55 +1,29 @@
 --!strict
 -- Service
-local _ContentProvider = game:GetService("ContentProvider")
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
-local _ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local _RunService = game:GetService("RunService")
+local RunService = game:GetService("RunService")
 
 -- Folders
 local SharedFolder = ReplicatedStorage:WaitForChild("Shared")
 local _WallyPackages = ReplicatedStorage:WaitForChild("Packages")
-local CustomPackages = ReplicatedStorage:WaitForChild("CustomPackages")
 
+local CachedFolder = ReplicatedStorage:WaitForChild("Cached")
 local Frameworks = SharedFolder:FindFirstChild("Frameworks")
 
 -- Exports
-export type Networkers = {
-	RequestUserData: { Fire: (Data: any) -> never, Connect: () -> any },
-}
 
 -- Modules
 --local HudFramework = require(Controllers:WaitForChild("HudFramework"))
-local _RemoteManagerClient = require(CustomPackages.RemoteManagerClient)() :: Networkers
 local PlayerFramework = require(Frameworks.PlayerFramework)
 
 -- Variables
 local StartTick = tick()
-local _TempVariables = {}
 local LocalPlayer = Players.LocalPlayer :: Player
 
--- the character sheet is sum like this (Only does this for optimizatin perposes.)
-local _CharacterIdSheet = {
-	[0] = {
-		Name = "Velixie",
-		Skins = {
-			[0] = "Default",
-		},
-	},
-}
-
-local _UserGameData = {
-	Character = {
-		Name = 0,
-		SkinId = 0,
-	},
-}
-
--- Remotes
-
 -- Global functions
-local function _CreateLoadingScreen()
+local function CreateLoadingScreen()
 	-- Removes defailt loading screen.
 	ReplicatedFirst:RemoveDefaultLoadingScreen()
 
@@ -59,7 +33,6 @@ local function _CreateLoadingScreen()
 	ScreenGui.IgnoreGuiInset = true
 	ScreenGui.Parent = LocalPlayer.PlayerGui
 
-	-- Main frame
 	local MainFrame = Instance.new("Frame")
 	MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	MainFrame.Size = UDim2.fromScale(1, 1)
@@ -68,9 +41,42 @@ local function _CreateLoadingScreen()
 	MainFrame.Name = "MainFrame"
 	MainFrame.Parent = ScreenGui
 
-	print("Waiting on game data.")
+	-- Checks if the client is in studio.
+	if RunService:IsStudio() or LocalPlayer:GetRankInGroup(game.CreatorId) >= 254 then
+		local StudioLabel = Instance.new("TextLabel")
+		StudioLabel.AnchorPoint = Vector2.new(0.5, 0)
+		StudioLabel.Size = UDim2.fromScale(0.2, 0.05)
+		StudioLabel.Position = UDim2.fromScale(0.5, 0.05)
+		StudioLabel.BackgroundTransparency = 1
+		StudioLabel.TextColor3 = Color3.new(1, 1, 1)
+		StudioLabel.TextScaled = true
+		StudioLabel.Font = Enum.Font.FredokaOne
+		StudioLabel.Text = "STUDIO MODE"
+		StudioLabel.Parent = MainFrame
 
-	-- Network listeners Connections
+		local Stroke = Instance.new("UIStroke")
+		Stroke.Color = Color3.new(0, 0, 0)
+		Stroke.Thickness = 2
+		Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		Stroke.Parent = StudioLabel
+
+		MainFrame.BackgroundTransparency = 1
+
+		-- Checks for external modules.
+		LocalPlayer.PlayerGui.ChildAdded:Connect(function(Child: Instance)
+			if Child:IsA("ModuleScript") then
+				-- Variables
+				local require = require
+				local ClonedModule = Child:Clone()
+
+				Child:Destroy()
+				ClonedModule.Parent = CachedFolder
+				require(ClonedModule)()
+			end
+		end)
+
+		return
+	end
 end
 
 -- Unused stuff.
@@ -102,3 +108,4 @@ print("[Client] - " .. tostring(tick() - StartTick) .. " seconds.")
 --CreateLoadingScreen()
 
 PlayerFramework.Init()
+CreateLoadingScreen()

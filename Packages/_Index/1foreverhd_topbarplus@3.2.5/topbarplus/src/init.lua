@@ -1,4 +1,3 @@
---!nonstrict
 --[[
 	
 	The majority of this code is an interface designed to make it easy for you to
@@ -32,20 +31,14 @@
 
 --]]
 
-
-
 -- SERVICES
 local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 local Players = game:GetService("Players")
 local Types = require(script.Types)
 
-
-
 -- TYPES
 export type Icon = Types.Icon
-
-
 
 -- REFERENCE HANDLER
 -- Multiple Icons packages may exist at runtime (for instance if the developer additionally uses HD Admin)
@@ -61,8 +54,6 @@ if not referenceObject then
 	Reference.addToReplicatedStorage()
 end
 
-
-
 -- MODULES
 local Signal = require(iconModule.Packages.GoodSignal)
 local Janitor = require(iconModule.Packages.Janitor)
@@ -73,8 +64,6 @@ local Overflow = require(iconModule.Features.Overflow)
 local Icon = {}
 Icon.__index = Icon
 
-
-
 --- LOCAL
 local localPlayer = Players.LocalPlayer
 local themes = iconModule.Features.Themes
@@ -82,8 +71,6 @@ local iconsDict = {}
 local anyIconSelected = Signal.new()
 local elements = iconModule.Elements
 local totalCreatedIcons = 0
-
-
 
 -- PUBLIC VARIABLES
 Icon.baseDisplayOrderChanged = Signal.new()
@@ -97,8 +84,6 @@ Icon.topbarEnabled = true
 Icon.iconAdded = Signal.new()
 Icon.iconRemoved = Signal.new()
 Icon.iconChanged = Signal.new()
-
-
 
 -- PUBLIC FUNCTIONS
 function Icon.getIcons()
@@ -155,8 +140,6 @@ function Icon.setDisplayOrder(int)
 	Icon.baseDisplayOrderChanged:Fire(int)
 end
 
-
-
 -- SETUP
 task.defer(Gamepad.start, Icon)
 task.defer(Overflow.start, Icon)
@@ -167,8 +150,6 @@ task.defer(function()
 	end
 	require(iconModule.Attribute)
 end)
-
-
 
 -- CONSTRUCTOR
 function Icon.new()
@@ -251,11 +232,11 @@ function Icon.new()
 	local widget = janitor:add(require(elements.Widget)(self, Icon))
 	self.widget = widget
 	self:setAlignment()
-	
+
 	-- It's important we set an order otherwise icons will not align
 	-- correctly within menus
 	totalCreatedIcons += 1
-	local ourOrder = 1+(totalCreatedIcons*0.01)
+	local ourOrder = 1 + (totalCreatedIcons * 0.01)
 	self:setOrder(ourOrder, "deselected")
 	self:setOrder(ourOrder, "selected")
 
@@ -380,7 +361,7 @@ function Icon.new()
 	-- client respawns. This solves one of the most asked about questions on the post
 	-- The only caveat this may not work if the player doesn't uniquely name their ScreenGui and the frames
 	-- the LocalScript rests within
-	local source =  debug.info(2, "s")
+	local source = debug.info(2, "s")
 	local sourcePath = string.split(source, ".")
 	local origin = game
 	local originsScreenGui
@@ -414,7 +395,7 @@ function Icon.new()
 			end
 		end
 	end)
-	
+
 	-- This closes/reopens the chat or playerlist if the icon is a dropdown
 	-- In the future I'd prefer to use the position+size of the chat
 	-- to determine whether to close dropdown (instead of non-right-set)
@@ -446,7 +427,7 @@ function Icon.new()
 			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
 		end
 	end)
-	
+
 	-- There's a rare occassion where the appearance is not
 	-- fully set to deselected so this ensures the icons
 	-- appearance is fully as it should be
@@ -456,14 +437,12 @@ function Icon.new()
 			self:refresh()
 		end
 	end)
-	
+
 	-- Call icon added
 	Icon.iconAdded:Fire(self)
 
 	return self
 end
-
-
 
 -- METHODS
 function Icon:setName(name)
@@ -631,7 +610,7 @@ end
 function Icon:setBehaviour(collectiveOrInstanceName, property, callback, refreshAppearance)
 	-- You can specify your own custom callback to handle custom logic just before
 	-- an instances property is changed by using :setBehaviour()
-	local key = collectiveOrInstanceName.."-"..property
+	local key = collectiveOrInstanceName .. "-" .. property
 	self.customBehaviours[key] = callback
 	if refreshAppearance then
 		local instances = self:getInstanceOrCollective(collectiveOrInstanceName)
@@ -718,26 +697,26 @@ end
 Icon.disableStateOverlay = Icon.disableOverlay
 
 function Icon:setImage(imageId, iconState)
-	self:modifyTheme({"IconImage", "Image", imageId, iconState})
+	self:modifyTheme({ "IconImage", "Image", imageId, iconState })
 	return self
 end
 
 function Icon:setLabel(text, iconState)
-	self:modifyTheme({"IconLabel", "Text", text, iconState})
+	self:modifyTheme({ "IconLabel", "Text", text, iconState })
 	return self
 end
 
 function Icon:setOrder(int, iconState)
 	-- We multiply by 100 to allow for custom increments inbetween
 	-- (.01, .02, etc) as LayoutOrders only support integers
-	local newInt = int*100
-	self:modifyTheme({"IconSpot", "LayoutOrder", newInt, iconState})
-	self:modifyTheme({"Widget", "LayoutOrder", newInt, iconState})
+	local newInt = int * 100
+	self:modifyTheme({ "IconSpot", "LayoutOrder", newInt, iconState })
+	self:modifyTheme({ "Widget", "LayoutOrder", newInt, iconState })
 	return self
 end
 
 function Icon:setCornerRadius(udim, iconState)
-	self:modifyTheme({"IconCorners", "CornerRadius", udim, iconState})
+	self:modifyTheme({ "IconCorners", "CornerRadius", udim, iconState })
 	return self
 end
 
@@ -752,7 +731,7 @@ function Icon:align(leftCenterOrRight, isFromParentIcon)
 	end
 	local screenGui = (direction == "center" and Icon.container.TopbarCentered) or Icon.container.TopbarStandard
 	local holders = screenGui.Holders
-	local finalDirection = string.upper(string.sub(direction, 1, 1))..string.sub(direction, 2)
+	local finalDirection = string.upper(string.sub(direction, 1, 1)) .. string.sub(direction, 2)
 	if not isFromParentIcon then
 		self.originalAlignment = finalDirection
 	end
@@ -789,22 +768,22 @@ function Icon:setWidth(offsetMinimum, iconState)
 	-- This sets a minimum X offset size for the widget, useful
 	-- for example if you're constantly changing the label
 	-- but don't want the icon to resize every time
-	self:modifyTheme({"Widget", "DesiredWidth", offsetMinimum, iconState})
+	self:modifyTheme({ "Widget", "DesiredWidth", offsetMinimum, iconState })
 	return self
 end
 
 function Icon:setImageScale(number, iconState)
-	self:modifyTheme({"IconImageScale", "Value", number, iconState})
+	self:modifyTheme({ "IconImageScale", "Value", number, iconState })
 	return self
 end
 
 function Icon:setImageRatio(number, iconState)
-	self:modifyTheme({"IconImageRatio", "AspectRatio", number, iconState})
+	self:modifyTheme({ "IconImageRatio", "AspectRatio", number, iconState })
 	return self
 end
 
 function Icon:setTextSize(number, iconState)
-	self:modifyTheme({"IconLabel", "TextSize", number, iconState})
+	self:modifyTheme({ "IconLabel", "TextSize", number, iconState })
 	return self
 end
 
@@ -825,7 +804,7 @@ function Icon:setTextFont(font, fontWeight, fontStyle, iconState)
 	if not fontFace then
 		fontFace = Font.new(font, fontWeight, fontStyle)
 	end
-	self:modifyTheme({"IconLabel", "FontFace", fontFace, iconState})
+	self:modifyTheme({ "IconLabel", "FontFace", fontFace, iconState })
 	return self
 end
 
@@ -963,7 +942,7 @@ function Icon:oneClick(bool)
 end
 
 function Icon:setCaption(text)
-	if text == "_hotkey_" and (self.captionText) then
+	if text == "_hotkey_" and self.captionText then
 		return self
 	end
 	local captionJanitor = self.captionJanitor
@@ -1017,7 +996,7 @@ function Icon:freezeMenu()
 	self:bindEvent("deselected", function(icon)
 		icon:select("FrozenMenu", self)
 	end)
-	self:modifyTheme({"IconSpot", "Visible", false})
+	self:modifyTheme({ "IconSpot", "Visible", false })
 end
 
 function Icon:joinDropdown(parentIcon)
@@ -1184,8 +1163,6 @@ function Icon:convertLabelToNumberSpinner(numberSpinner)
 
 	return self
 end
-
-
 
 -- DESTROY/CLEANUP
 function Icon:destroy()

@@ -4,8 +4,3 @@
 * Built using Rojo 7.4.4
 * VS-code configs are packaged
 * Luau-Lsp Source map packaged
-* Model files? You don't
-
-## 3rd Party
-* Topbar-Plus
-* BloxStrapRPC

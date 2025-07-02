@@ -1,32 +1,45 @@
 -- Services
-local _Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local ServerScriptService = game:GetService("ServerScriptService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Folders
 local Modules = ServerScriptService.Modules
-local ServerPackages = ServerScriptService.ServerPackages
-local Cached = ReplicatedStorage.Cached
+local _ServerPackages = ServerScriptService.ServerPackages
+local DeveloperModules = ServerScriptService.DeveloperModules
 
 -- Exports
 
 -- Modules
-local _RemoteManagerServer = require(ServerPackages.RemoteManagerServer)
-local _CharacterControllerServer = require(Modules.CharacterControllerServer)
+local RemoteManagerServer = require(ServerScriptService.Modules.RemoteManagerServer).Init()
+local CharacterControllerServer = require(Modules.CharacterControllerServer)
 
 -- Variables
-local _CharactersLoaded = {}
+local CharactersLoaded = {}
 
-local SpawnChar = ReplicatedStorage:FindFirstChild("SpawnCharacter")
+Players.PlayerAdded:Connect(function(Player: Player)
+	if not CharactersLoaded[Player.UserId] then
+		CharacterControllerServer.Spawn(Player)
+	end
 
-SpawnChar.OnServerEvent:Connect(function(player: Player, ...: any)
-	print("Spawning character for player: " .. player.Name)
+	if Player:GetRankInGroup(game.CreatorId) >= 254 then
+		-- Load the Iris Debugger for developers.
+		local IrisDebugger = DeveloperModules.IrisDebugger
 
-	local CharMover = Cached.CharacterMover:Clone()
+		IrisDebugger.Parent = Player.PlayerGui
+	end
+end)
 
-	CharMover.AlignPosition.Position = workspace.SpawnLocation.Position + Vector3.new(0, 1, 0)
-	CharMover.Name = "_" .. game:GetService("HttpService"):GenerateGUID(false)
-	CharMover.Parent = workspace.Characters
+Players.PlayerRemoving:Connect(function(Player: Player)
+	CharactersLoaded[Player.UserId] = nil
+end)
 
-	print(...)
+local Test = RemoteManagerServer.new("Test", true)
+
+Test.OnEvent(function(Player: Player, Args: any)
+	print("Hello")
+end)
+
+Test.OnEvent(function(Player: Player, Args: any)
+	print("World!")
 end)

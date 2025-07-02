@@ -59,12 +59,22 @@ return function(Camera: Camera, BindName: string)
 
 	local MoveUp = InputActionFramework.new("MoveUp", Enum.InputActionType.Bool, 1, "FreeCameraController")
 	MoveUp.BindKeyboard(Enum.KeyCode.E)
+	MoveUp.BindAltKeyboard(Enum.KeyCode.Space)
 
 	local MoveDown = InputActionFramework.new("MoveDown", Enum.InputActionType.Bool, 1, "FreeCameraController")
 	MoveDown.BindKeyboard(Enum.KeyCode.Q)
+	MoveDown.BindAltKeyboard(Enum.KeyCode.LeftShift)
 
 	local SlowDown = InputActionFramework.new("SlowDown", Enum.InputActionType.Bool, 1, "FreeCameraController")
-	SlowDown.BindKeyboard(Enum.KeyCode.LeftShift)
+	SlowDown.BindKeyboard(Enum.KeyCode.LeftControl)
+
+	local IncreaseSpeed = InputActionFramework.new("IncreaseSpeed", Enum.InputActionType.Bool, 1, "FreeCameraController")
+	IncreaseSpeed.BindKeyboard(Enum.KeyCode.Plus)
+	IncreaseSpeed.BindKeyboard(Enum.KeyCode.KeypadPlus)
+
+	local DecreaseSpeed = InputActionFramework.new("DecreaseSpeed", Enum.InputActionType.Bool, 1, "FreeCameraController")
+	DecreaseSpeed.BindKeyboard(Enum.KeyCode.Minus)
+	DecreaseSpeed.BindKeyboard(Enum.KeyCode.KeypadMinus)
 
 	-- Connections
 	MoveForward.OnPressed(function()
@@ -123,16 +133,24 @@ return function(Camera: Camera, BindName: string)
 		MoveMultiplier = 1.25
 	end)
 
+	IncreaseSpeed.OnPressed(function()
+		MoveMultiplier += 0.25
+	end)
+
+	DecreaseSpeed.OnPressed(function()
+		MoveMultiplier = math.max(0.25, MoveMultiplier - 0.25)
+	end)
+
 	print("[FreeCameraController] - Initialized.")
 
 	return {
 		Disconnect = function()
 			RunService:UnbindFromRenderStep(BindName)
 
-			UserInputService.MouseEnabled = false
+			UserInputService.MouseIconEnabled = true
 			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 
 			InputActionFramework.ClearBindings("FreeCameraController")
 		end,
-	}
+	} :: { Disconnect: () -> () }
 end

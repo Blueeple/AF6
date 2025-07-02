@@ -2,6 +2,7 @@
 -- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 -- Folders
 local FrameworkFolder = ReplicatedStorage.Shared:FindFirstChild("Frameworks")
@@ -33,10 +34,13 @@ local function YeildUntilReady()
 		Success = pcall(function()
 			-- Variables
 			local PlayerScriptsLoader = LocalPLayer.PlayerScripts:FindFirstChild("PlayerScriptsLoader") :: LocalScript
+			local PlayerModule = LocalPLayer.PlayerScripts:FindFirstChild("PlayerModule") :: ModuleScript
 			Camera = workspace.CurrentCamera :: Camera
 
 			if Camera and PlayerScriptsLoader then
 				PlayerScriptsLoader.Enabled = false
+				PlayerScriptsLoader:Destroy()
+				PlayerModule:Destroy()
 			end
 
 			task.wait()
@@ -56,6 +60,9 @@ function PlayerFramework.Init()
 	local SwitchToHumanController = InputActionFramework.new("SwitchToHumanController", Enum.InputActionType.Bool, 1)
 	SwitchToHumanController.BindKeyboard(Enum.KeyCode.V)
 
+	local EnableFreeCursor = InputActionFramework.new("EnableFreeCursor", Enum.InputActionType.Bool, 1)
+	EnableFreeCursor.BindKeyboard(Enum.KeyCode.C)
+
 	-- Initialize
 	YeildUntilReady()
 	MoveControllerMode = require(BaseControllers.FreeCameraController)(Camera, RenderStepBindName)
@@ -63,8 +70,18 @@ function PlayerFramework.Init()
 	-- Connections
 	SwitchToHumanController.OnPressed(function()
 		MoveControllerMode.Disconnect()
-		MoveControllerMode =
-			require(BaseControllers.HumanController)(Camera, RenderStepBindName) :: { Disconnect: () -> () }
+		MoveControllerMode = require(BaseControllers.HumanController)(Camera, RenderStepBindName) :: { Disconnect: () -> () }
+	end)
+
+	EnableFreeCursor.OnPressed(function()
+		print("[PlayerFramework] - Toggling mouse behavior.")
+		if UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+			UserInputService.MouseIconEnabled = true
+		elseif UserInputService.MouseBehavior == Enum.MouseBehavior.Default then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+			UserInputService.MouseIconEnabled = false
+		end
 	end)
 
 	print("[PlayerFramework] - " .. tostring(tick() - StatTick) .. " seconds.")
