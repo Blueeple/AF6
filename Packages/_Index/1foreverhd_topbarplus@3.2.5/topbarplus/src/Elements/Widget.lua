@@ -164,7 +164,6 @@ return function(icon, Icon)
 	iconLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	iconLabel.TextXAlignment = Enum.TextXAlignment.Left
 	iconLabel.Text = ""
-	iconLabel.TextWrapped = true
 	iconLabel.TextScaled = false
 	iconLabel.Active = false
 	iconLabel.AutoLocalize = true

@@ -6,11 +6,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 -- Folders
-local SharedFolder = ReplicatedStorage:WaitForChild("Shared")
 local _WallyPackages = ReplicatedStorage:WaitForChild("Packages")
 
 local CachedFolder = ReplicatedStorage:WaitForChild("Cached")
-local Frameworks = SharedFolder:FindFirstChild("Frameworks")
+local Frameworks = ReplicatedStorage:FindFirstChild("Frameworks")
 
 -- Exports
 

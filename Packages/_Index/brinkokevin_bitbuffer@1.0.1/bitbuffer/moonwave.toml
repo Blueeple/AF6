@@ -1,0 +1,9 @@
+title = "BitBuffer"
+gitRepoUrl = "https://github.com/rstk/BitBuffer/"
+
+[docusaurus]
+organizationName = "rstk"
+projectName = "BitBuffer"
+url = "https://rstk.github.io/"
+baseUrl = "/BitBuffer/"
+tagline = "Blazing-fast BitBuffer for Roblox"

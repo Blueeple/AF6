@@ -1,0 +1,17 @@
+{
+	"name": "BitBuffer: Testing",
+	"tree": {
+		"$className": "DataModel",
+		"ReplicatedStorage": {
+			"Packages": {
+				"$className": "Folder",
+				"BitBuffer": {
+					"$path": "src"
+				}
+			},
+			"Tests": {
+				"$path": "tests"
+			}
+		}
+	}
+}

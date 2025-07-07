@@ -4,9 +4,8 @@
     "$className": "DataModel",
 
     "ReplicatedStorage": {
-      "Shared": {
-        "$path": "src/Shared"
-      },
+      "$path": "src/shared",
+
       "Packages":{
         "$path": "Packages"
       },

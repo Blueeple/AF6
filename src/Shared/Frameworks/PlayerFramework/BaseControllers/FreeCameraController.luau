@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local _UserSettings = UserSettings():GetService("UserGameSettings")
 
 -- Folders
-local FrameworkFolder = ReplicatedStorage.Shared:FindFirstChild("Frameworks")
+local FrameworkFolder = ReplicatedStorage:FindFirstChild("Frameworks")
 
 -- Modules
 local InputActionFramework = require(FrameworkFolder:WaitForChild("InputActionFramework"))

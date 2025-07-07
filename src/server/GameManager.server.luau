@@ -11,7 +11,7 @@ local DeveloperModules = ServerScriptService.DeveloperModules
 -- Exports
 
 -- Modules
-local RemoteManagerServer = require(ServerScriptService.Modules.RemoteManagerServer).Init()
+local EZ_NetServer = require(ServerScriptService.Modules["EZ-NetServer"])
 local CharacterControllerServer = require(Modules.CharacterControllerServer)
 
 -- Variables
@@ -34,12 +34,12 @@ Players.PlayerRemoving:Connect(function(Player: Player)
 	CharactersLoaded[Player.UserId] = nil
 end)
 
-local Test = RemoteManagerServer.new("Test", true)
+local Test = EZ_NetServer.new("StringRemoteTest", true, {
+	"table",
+})
 
-Test.OnEvent(function(Player: Player, Args: any)
-	print("Hello")
+Test.OnPacket(function(Player: Player, Args: any)
+	print(Player, Args)
 end)
 
-Test.OnEvent(function(Player: Player, Args: any)
-	print("World!")
-end)
+Test.FirePacket(Players:WaitForChild("Blueeple"), "Test")

@@ -1,3 +1,4 @@
+--!nocheck
 -- Here be dragons
 
 local Players = game:GetService("Players")

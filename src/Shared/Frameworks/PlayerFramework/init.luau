@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 -- Folders
-local FrameworkFolder = ReplicatedStorage.Shared:FindFirstChild("Frameworks")
+local FrameworkFolder = ReplicatedStorage:FindFirstChild("Frameworks")
 local BaseControllers = script:FindFirstChild("BaseControllers")
 
 -- Types

@@ -1,4 +1,7 @@
 --!strict
+-- Services
+local GuiService = game:GetService("GuiService")
+
 -- Exported types
 export type CustomInputAction = {
 	ActionName: string,
@@ -18,11 +21,16 @@ local StartTime = tick()
 -- Module constuctor
 local InputActionFramework = {}
 
---[[
+--[=[
 	InputActionFramework is a framework for creating and managing input actions in Roblox.
 	It allows you to create custom input actions, bind them to keyboard and gamepad inputs,
 	and handle their pressed and released events.
-]]
+
+	@param ActionName: string
+	@param ActionType: Enum.InputActionType
+	@param InputPrioty: number
+	@param Tag: string
+]=]
 function InputActionFramework.new(ActionName: string, ActionType: Enum.InputActionType, InputPrioty: number, Tag: string?): CustomInputAction
 	-- Assertions
 	assert(ActionName and type(ActionName) == "string", "ActionName must be a non-empty string.")
@@ -71,10 +79,10 @@ function InputActionFramework.new(ActionName: string, ActionType: Enum.InputActi
 	end
 
 	-- Methods
-	--[[
+	--[=[
         sets if the action is enabled or not.
         @param Enabled: boolean - Whether the action is enabled.
-    ]]
+    ]=]
 	function self.SetEnabled(boolean: boolean)
 		if type(boolean) ~= "boolean" then
 			warn("Enabled must be a boolean value.")
@@ -82,11 +90,11 @@ function InputActionFramework.new(ActionName: string, ActionType: Enum.InputActi
 		InputAction.Enabled = boolean
 	end
 
-	--[[
+	--[=[
         Binds a keyboard key to an action.
         @param KeyCode: Enum.KeyCode - The key to bind.
         @param Callback: function - The function to call when the key is pressed.
-    ]]
+    ]=]
 	function self.BindKeyboard(KeyCode: Enum.KeyCode)
 		KeyboardAction.KeyCode = KeyCode
 	end
@@ -95,20 +103,20 @@ function InputActionFramework.new(ActionName: string, ActionType: Enum.InputActi
 		AltKeyboardAction.KeyCode = KeyCode
 	end
 
-	--[[
+	--[=[
         Binds a gamepad button to an action.
         @param Button: Enum.KeyCode - The gamepad button to bind.
-    ]]
+    ]=]
 	function self.BindGamepad(Button: Enum.KeyCode, PressedThreshold: number, ReleasedThreshold: number)
 		GamepadAction.KeyCode = Button
 		GamepadAction.PressedThreshold = PressedThreshold
 		GamepadAction.ReleasedThreshold = ReleasedThreshold
 	end
 
-	--[[
+	--[=[
         Sets the mobile UI for the action.
         @param MobileUI: GuiButton - The button to use for mobile input.
-    ]]
+    ]=]
 	function self.SetMobileUI(MobileUI: GuiButton)
 		if MobileUI:IsA("GuiButton") then
 			KeyboardAction.UIButton = MobileUI
@@ -117,30 +125,30 @@ function InputActionFramework.new(ActionName: string, ActionType: Enum.InputActi
 		end
 	end
 
-	--[[
+	--[=[
         Binds a callback function to the action when the key is pressed.
         @param Callback: function - The function to call when the key is pressed.
-    ]]
-	function self.OnPressed(Callback: () -> ())
+    ]=]
+	function self.OnPressed(Callback: (MenuPassThrough: boolean) -> ())
 		InputAction.Pressed:Connect(function()
-			Callback()
+			Callback(GuiService.MenuIsOpen)
 		end)
 	end
 
-	--[[
+	--[=[
         Binds a callback function to the action when the key is released.
         @param Callback: function - The function to call when the key is pressed.
-    ]]
-	function self.OnRelease(Callback: () -> ())
+    ]=]
+	function self.OnRelease(Callback: (MenuPassThrough: boolean) -> ())
 		InputAction.Released:Connect(function()
-			Callback()
+			Callback(GuiService.MenuIsOpen)
 		end)
 	end
 
-	--[[
+	--[=[
         Gets the Direction 1D state of the action.
         @return number - The current state of the action.
-    ]]
+    ]=]
 	--TODO
 	function self.GetDirection1D(): number
 		return 0
@@ -153,10 +161,10 @@ function InputActionFramework.new(ActionName: string, ActionType: Enum.InputActi
 	return setmetatable(self, InputActionFramework) :: CustomInputAction
 end
 
---[[
+--[=[
 	Clears all input bindings for a specific tag or all bindings if no tag is provided.
 	@param Tag: string? - The tag to clear bindings for. If nil, clears all bindings.
-]]
+]=]
 function InputActionFramework.ClearBindings(Tag: string?)
 	-- Clear all bindings
 	if Tag then
