@@ -1,9 +1,0 @@
-[package]
-name = "brinkokevin/bitbuffer"
-description = "rstk's bitbuffer with native enabled Github: https://github.com/rstk/bitbuffer"
-version = "1.0.1"
-license = "MIT"
-registry = "https://github.com/UpliftGames/wally-index"
-realm = "shared"
-
-[dependencies]

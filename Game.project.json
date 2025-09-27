@@ -1,22 +1,19 @@
 {
-  "name": "ProjeK-CL4SIX",
+  "name": "Apex Field 6",
   "tree": {
     "$className": "DataModel",
 
     "ReplicatedStorage": {
       "$path": "src/shared",
 
-      "Packages":{
+      "Wally":{
         "$path": "Packages"
-      },
-      "CustomPackages": {
-        "$path": "CustomPackages"
       }
     },
 
     "ServerScriptService": {
       "$path": "src/server",
-      "ServerPackages":{
+      "WallyServer": {
         "$path": "ServerPackages"
       }
     },
@@ -24,6 +21,16 @@
     "ReplicatedFirst": {
       "Client": {
         "$path": "src/client"
+      }
+    },
+
+    "StarterPlayer": {
+      "$path": "src/starterPlayer",
+      "StarterCharacterScripts": {
+        "$path": "src/characterScripts"
+      },
+      "StarterPlayerScripts": {
+        "$path": "src/PlayerScripts"
       }
     }
   }
