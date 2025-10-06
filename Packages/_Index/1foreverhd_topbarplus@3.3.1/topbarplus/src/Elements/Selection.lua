@@ -1,4 +1,4 @@
-return function(Icon)
+return function(_Icon)
 
 	-- Credit to lolmansReturn and Canary Software for
 	-- retrieving these values

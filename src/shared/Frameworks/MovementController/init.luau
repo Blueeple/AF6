@@ -109,9 +109,9 @@ local IS_CROUCHING = false
 local IS_JUMPING = false
 
 -- Global function
---[[
+--[=[
 	Construct a character viewmodel.
-]]
+]=]
 local function _ConstructCharacterViewModel(): Types.CharacterViewModel
 	return {
 		Torso = Instance.new("MeshPart"),
@@ -120,17 +120,17 @@ local function _ConstructCharacterViewModel(): Types.CharacterViewModel
 	}
 end
 
---[[
+--[=[
 	Convert CFrame to rotation
-]]
+]=]
 function _CFrameToRotation(CFrame: CFrame): Vector3
 	local X, Y, Z = CFrame:ToOrientation()
 	return Vector3.new(math.deg(X), math.deg(Y), math.deg(Z))
 end
 
---[[
+--[=[
 	Loads an animation from a given ID and stores it in the LoadedAnimations table.
-]]
+]=]
 local function LoadAnimations(Animator: Animator)
 	-- Iterates through the Animations table and loads each animation
 	for StateName, StateAnimations in Animations do
@@ -146,9 +146,9 @@ local function LoadAnimations(Animator: Animator)
 	end
 end
 
---[[
+--[=[
 	Gets the direction name based on the X and Y values.
-]]
+]=]
 local function GetDirectionName(DirectionX: number, DirectionY: number): string
 	local DirectionName = "Unknown"
 
@@ -181,9 +181,9 @@ local function GetDirectionName(DirectionX: number, DirectionY: number): string
 	return DirectionName
 end
 
---[[
+--[=[
 	Gets the movement state of the character.
-]]
+]=]
 local function GetMovementState(Humanoid: Humanoid): string
 	if Humanoid.MoveDirection.Magnitude > 0 and not IS_SPRINTING and not IS_CROUCHING then
 		return "Walking"
@@ -198,9 +198,9 @@ local function GetMovementState(Humanoid: Humanoid): string
 	end
 end
 
---[[
+--[=[
 	Plays the animation for the given direction.
-]]
+]=]
 local function HandlePlayerStates(Direction: string, Humanoid: Humanoid, State: string)
 	if not Direction:match("Idle") and not State:match("Idle") then
 		-- Checks if there is an walk direction tween.
@@ -233,9 +233,9 @@ local function HandlePlayerStates(Direction: string, Humanoid: Humanoid, State: 
 	end
 end
 
---[[
+--[=[
 	Calculates the characters movement direction for omni-movement.
-]]
+]=]
 local function CalculateMoveDirection(Humanoid: Humanoid, HumanoidRootPart: Part): Types.MovementDirectionInfo
 	-- Variables
 	local ForwardDirection = HumanoidRootPart.CFrame.LookVector
@@ -256,16 +256,16 @@ end
 -- Modules
 local MovementController = {}
 
---[[
+--[=[
 	Initializes the MovementController module.
-]]
+]=]
 function MovementController.Init(Animator: Animator)
 	LoadAnimations(Animator)
 end
 
---[[
+--[=[
 	Connects the MovementController module to the main module.
-]]
+]=]
 function MovementController.LinkState()
 	print("[MovementController] - Connected to animate link state")
 
@@ -273,9 +273,9 @@ function MovementController.LinkState()
 	local self = {}
 
 	-- Methods
-	--[[
+	--[=[
 		Links the animator to the main module.
-	]]
+	]=]
 	self.LinkAnimator = function(Animator: Animator): boolean
 		if Animator then
 			print("[MovementController] - Animator linked")
@@ -286,9 +286,9 @@ function MovementController.LinkState()
 		end
 	end
 
-	--[[
+	--[=[
 		Links the Humanoid and RootPart for animation direction.
-	]]
+	]=]
 	self.LinkCharacter = function(Humanoid: Humanoid, HumanoidRootPart: Part)
 		if Humanoid and HumanoidRootPart then
 			print("[MovementController] - Humanoid and RootPart linked")
@@ -353,9 +353,9 @@ function MovementController.LinkState()
 		end
 	end
 
-	--[[
+	--[=[
 		Disconnects the character framework from the animations script.
-	]]
+	]=]
 	self.Disconnect = function()
 		print("[MovementController] - Disconnected")
 

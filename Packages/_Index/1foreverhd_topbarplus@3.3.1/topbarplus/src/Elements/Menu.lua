@@ -100,7 +100,7 @@ return function(icon)
 		end
 
 		-- Change order of spot when alignment changes
-		local menuGap = icon:getInstance("MenuGap")
+		menuGap = icon:getInstance("MenuGap")
 		local function updateAlignent()
 			local alignment = icon.alignment
 			local spotIndex = -99999
@@ -164,13 +164,13 @@ return function(icon)
 	icon.menuChildAdded:Connect(totalChildrenChanged)
 	icon.menuSet:Connect(function(arrayOfIcons)
 		-- Reset any previous icons
-		for i, otherIconUID in pairs(icon.menuIcons) do
+		for _, otherIconUID in pairs(icon.menuIcons) do
 			local otherIcon = Icon.getIconByUID(otherIconUID)
 			otherIcon:destroy()
 		end
 		-- Apply new icons
 		if type(arrayOfIcons) == "table" then
-			for i, otherIcon in pairs(arrayOfIcons) do
+			for _, otherIcon in pairs(arrayOfIcons) do
 				otherIcon:joinMenu(icon)
 			end
 		end

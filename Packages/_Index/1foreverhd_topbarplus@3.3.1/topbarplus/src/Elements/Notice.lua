@@ -23,15 +23,13 @@ return function(icon, Icon)
 	noticeLabel.ZIndex = 26
 	noticeLabel.AnchorPoint = Vector2.new(0.5, 0.5)
 	noticeLabel.AutomaticSize = Enum.AutomaticSize.X
-	noticeLabel.Size = UDim2.new(1, 0, 1, 0)
+	noticeLabel.Size = UDim2.fromScale(1, 1)
 	noticeLabel.BackgroundTransparency = 1
-	noticeLabel.Position = UDim2.new(0.5, 0, 0.515, 0)
+	noticeLabel.Position = UDim2.fromScale(0.5, 0.515)
 	noticeLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	noticeLabel.FontSize = Enum.FontSize.Size14
 	noticeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
 	noticeLabel.Text = "1"
 	noticeLabel.TextWrapped = true
-	noticeLabel.TextWrap = true
 	noticeLabel.Font = Enum.Font.Arial
 	noticeLabel.Parent = notice
 	
@@ -60,9 +58,7 @@ return function(icon, Icon)
 		end
 		local parentIcon = Icon.getIconByUID(icon.parentIconUID)
 		local dropdownOrMenuActive = #icon.dropdownIcons > 0 or #icon.menuIcons > 0
-		if icon.isSelected and dropdownOrMenuActive then
-			enabled = false
-		elseif parentIcon and not parentIcon.isSelected then
+		if icon.isSelected and dropdownOrMenuActive or (parentIcon and not parentIcon.isSelected) then
 			enabled = false
 		end
 		Utility.setVisible(notice, enabled, "NoticeHandler")

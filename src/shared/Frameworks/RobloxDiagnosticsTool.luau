@@ -67,9 +67,18 @@ end)
 -- Updates Ping samples
 task.spawn(function()
 	while task.wait(1) do
-		local pingValue = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
-		if pingValue then
+		local pingValue = 999
+		local Success = pcall(function()
+			pingValue = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+		end)
+
+		if Success and pingValue then
 			table.insert(PingSamples, pingValue)
+			if #PingSamples > MaxSamples then
+				table.remove(PingSamples, 1)
+			end
+		else
+			table.insert(PingSamples, 999)
 			if #PingSamples > MaxSamples then
 				table.remove(PingSamples, 1)
 			end

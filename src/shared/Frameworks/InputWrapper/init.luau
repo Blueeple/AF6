@@ -38,6 +38,15 @@ Wrapper.StateEngine = {
 	IsMenuOpened = GuiService.MenuIsOpen,
 }
 
+-- State engine events
+GuiService.MenuOpened:Connect(function()
+	Wrapper.StateEngine.IsMenuOpened = true
+end)
+
+GuiService.MenuClosed:Connect(function()
+	Wrapper.StateEngine.IsMenuOpened = false
+end)
+
 -- Notices
 if EMULATORENBALED and not IASEnabled then
 	warn("[InputWrapper] - No CAS redesign detected, IAS Emulator lauched")
@@ -109,7 +118,12 @@ end
     @param Name: string
     @param Callback: () -> ()
 ]=]
-function Wrapper.CreateAction(Name: string, ContextInput: { Context: InputContext }, ActionType: Enum.InputActionType, Bindings: { Keyboard: Enum.KeyCode?, Gamepad: Enum.KeyCode?, TouchButton: GuiButton? })
+function Wrapper.CreateAction(
+	Name: string,
+	ContextInput: { Context: InputContext },
+	ActionType: Enum.InputActionType,
+	Bindings: { Keyboard: Enum.KeyCode?, Gamepad: Enum.KeyCode?, TouchButton: GuiButton? }
+)
 	--Signal
 	local OnPressedSignal = GoodSignal.new()
 	local OnReleasedSignal = GoodSignal.new()
@@ -145,7 +159,7 @@ function Wrapper.CreateAction(Name: string, ContextInput: { Context: InputContex
 				OnReleasedSignal:Fire()
 			end
 		end
-
+		
 		ContextActionService:BindAction(Name, HandleInputAction :: (Name: string, UserInputState: Enum.UserInputState, InputObject: InputObject) -> Enum.ContextActionResult, false)
 	elseif not Wrapper.StateEngine.IsMenuOpened then
 		InputAction.Pressed:Connect(function()
