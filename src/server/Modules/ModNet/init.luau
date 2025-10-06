@@ -48,6 +48,9 @@ ModNet.Engine = {
 		},
 	},
 	PacketObjectEngine = {},
+	Settings = {
+		MaxBufferSize = 64,
+	},
 }
 ModNet.Engine.PacketObjectEngine.__index = ModNet.Engine.PacketObjectEngine
 ObjectEngine = ModNet.Engine.PacketObjectEngine
@@ -73,6 +76,67 @@ local function RequestPacketByName(Name: string): (Types.InternalPacket?, number
 	end
 
 	return nil, nil
+end
+
+local function PerformPacketIntegrityCheck(IsBuffer, ...)
+	-- Variables
+	local MNSettings = ModNet.Engine.Settings
+
+	-- Checks if the pacekt is a buffer
+	if IsBuffer then
+		-- Variables
+		local Args = table.pack(...)
+		local ArgCount = 0 :: number
+		local DetectedArgs = #Args
+		local VerifiedArgs = 0
+		local BufferSizeCount = 0 :: number
+
+		local BufferCheck1 = nil :: boolean?
+		local BufferCheck2 = nil :: boolean?
+
+		-- Check if the first argument is a buffer and has at least 1 byte
+		if Args["n"] > 0 and typeof(Args[1]) == "buffer" then
+			local IdentifierPacket = Args[1]
+			local PacketId = buffer.readu8(IdentifierPacket, 0) + 1
+
+			-- Check if the packet with id exists
+			if ModNet.Packets[PacketId] then
+				local PacketInfo = ModNet.Packets[PacketId]
+
+				ArgCount = #PacketInfo.Types
+
+				BufferCheck1 = true
+			else
+				BufferCheck1 = false
+			end
+		end
+
+		-- detects if all args in the packet are a packet
+		for Index = 1, #Args do
+			if typeof(Args[Index]) == "buffer" then
+				BufferSizeCount += buffer.len(Args[Index])
+				VerifiedArgs += 1
+			else
+				break
+			end
+		end
+
+		-- Checks if all the args are verified
+		if VerifiedArgs == DetectedArgs and DetectedArgs == ArgCount and VerifiedArgs == ArgCount and BufferSizeCount <= MNSettings.MaxBufferSize then
+			BufferCheck2 = true
+		else
+			BufferCheck2 = false
+		end
+
+		-- Checks if the Packet passed all buffer checks
+		if BufferCheck1 and BufferCheck2 then
+			return true
+		else
+			return false
+		end
+	else
+		return false
+	end
 end
 
 -- [[ Player Management ]]
@@ -105,21 +169,24 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 		local _OldTickPerSecond = ReplicatorConfig.TickPerSecond
 
 		-- Reciver signal connection
-		ReplicatorObject.Receiver = Remote.OnServerEvent:Connect(function(Player: Player, ...: buffer | any)
-			-- Arguments
-			local Args = ...
+		ReplicatorObject.Receiver = Remote.OnServerEvent:Connect(function(Player: Player, ...: any)
+			local Success = PerformPacketIntegrityCheck(true, ...)
 
-			if typeof(Args) == "buffer" then
-				-- Variables
-				local PacketId = buffer.readu8(Args, 0)
-				local Packet = ModNet.Packets[PacketId + 1]
-				local PacketData = buffer.create(buffer.len(Args) - 1)
-
+			if Success then
+				-- Arguments
+				local Args = table.pack(...)
+				local Arg1 = Args[1] :: buffer
 				
+				-- Variables
+				local PacketId = buffer.readu8(Arg1, 0)
+				local Packet = ModNet.Packets[PacketId + 1]
+				local PacketData = buffer.create(buffer.len(Arg1) - 1)
+
+				buffer.copy(PacketData, 0, Arg1, 1, buffer.len(Arg1) - 1)
 
 				print(Packet, PacketData)
 			else
-				print(Player, ...)
+				Player:Kick("[ModNet][Integrity] - Pacekt failed to pass Integrity test.")
 			end
 		end)
 
@@ -151,7 +218,7 @@ end
 	@param Channel: string
 	@param TypesList: { Types.EZN_Type }
 ]=]
-function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Channel: string, TypesList: { Types.EZN_Type })
+function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: string, TypesList: { Types.MN_Type })
 	-- Assertions
 	assert(not table.find(ModNet.Packets, Name), "Packet with this name already exists.")
 	assert(table.maxn(ModNet.Packets) <= 256, "Cannot create more than 256 packets.")
@@ -161,7 +228,7 @@ function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Channel: string
 
 	self.Name = Name
 	self.Unreliable = Unreliable
-	self.Channel = Channel
+	self.Replicator = Replicator
 	self.Types = TypesList
 	self.Signal = GoodSignal.new()
 

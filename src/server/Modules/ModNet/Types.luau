@@ -1,7 +1,7 @@
 export type InternalPacket = {
 	Name: string,
 	PacketId: number,
-	Codecs: { string },
+	Types: { string },
 	Reliable: boolean,
 	BlockedPlayers: { [number]: boolean },
 	Enabled: boolean,
@@ -20,7 +20,7 @@ export type Replicator = {
 	ThrottleInterval: number,
 }
 
-export type EZN_Type = {
+export type MN_Type = {
 	Read: (...any) -> ...any,
 	Write: (...any) -> ...any,
 }
