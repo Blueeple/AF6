@@ -17,9 +17,9 @@ local ObjectEngine = {}
 local PlayersLoaded = {} :: { [Player]: boolean }
 
 -- Modules
+local DataTypes = require(ReplicatedStorage:WaitForChild("MN-Types"))
 local GoodSignal = require(ReplicatedStorage.Frameworks:WaitForChild("GoodSignal"))
 local Types = require(script.Types)
-local DataTypes = require(ReplicatedStorage:WaitForChild("MN-Types"))
 
 -- Object oriented module constructor
 local ModNet = {}
@@ -56,14 +56,34 @@ ModNet.Engine.PacketObjectEngine.__index = ModNet.Engine.PacketObjectEngine
 ObjectEngine = ModNet.Engine.PacketObjectEngine
 
 -- [[ Object Engine Methods ]]
-function ObjectEngine:Fire(Player: Player, ...: any)
+--[=[
+	Fires a Pacekt to the client
+
+	@param Player: Player
+	@param ...
+]=]
+function ObjectEngine:Fire(Player: Player, ...)
+	-- Args
+	local ReplicatorObject = self :: Types.InternalPacket
+
+	-- Variables
+	local ReplicatorName = ReplicatorObject.Replicator
+	local Replicator = ReplicatorStorage:FindFirstChild(ReplicatorName) :: RemoteEvent
+	local PackedData = table.pack(...)
+
+	if Replicator and typeof(Player) == "Player" then
+		Replicator:FireClient(Player, buffer.create(1))
+	else
+		warn("[ModNet] - Client Fire error.")
+	end
+
 	print(self, Player, ...)
 end
 
 --[[ ModNet Internal ]]
 --[=[
 	Requests a packet by its name.
-		
+	
 	@param Name: string
 	@return PacketObjectEngine?
 	@return number?
@@ -78,62 +98,57 @@ local function RequestPacketByName(Name: string): (Types.InternalPacket?, number
 	return nil, nil
 end
 
-local function PerformPacketIntegrityCheck(IsBuffer, ...)
+local function PerformPacketIntegrityCheck(...)
 	-- Variables
+	local Args = table.pack(...)
 	local MNSettings = ModNet.Engine.Settings
 
-	-- Checks if the pacekt is a buffer
-	if IsBuffer then
-		-- Variables
-		local Args = table.pack(...)
-		local ArgCount = 0 :: number
-		local DetectedArgs = #Args
-		local VerifiedArgs = 0
-		local BufferSizeCount = 0 :: number
+	-- Variables
+	local ArgCount = 0 :: number
+	local DetectedArgs = #Args
+	local VerifiedArgs = 0
+	local BufferSizeCount = 0 :: number
 
-		local BufferCheck1 = nil :: boolean?
-		local BufferCheck2 = nil :: boolean?
+	local BufferCheck1 = nil :: boolean?
+	local BufferCheck2 = nil :: boolean?
 
-		-- Check if the first argument is a buffer and has at least 1 byte
-		if Args["n"] > 0 and typeof(Args[1]) == "buffer" then
-			local IdentifierPacket = Args[1]
-			local PacketId = buffer.readu8(IdentifierPacket, 0) + 1
+	-- Check if the first argument is a buffer and has at least 1 byte
+	if Args["n"] > 0 and typeof(Args[1]) == "buffer" then
+		local IdentifierPacket = Args[1]
+		local PacketId = buffer.readu8(IdentifierPacket, 0) + 1
 
-			-- Check if the packet with id exists
-			if ModNet.Packets[PacketId] then
-				local PacketInfo = ModNet.Packets[PacketId]
+		-- Check if the packet with id exists
+		if ModNet.Packets[PacketId] then
+			local PacketInfo = ModNet.Packets[PacketId]
 
-				ArgCount = #PacketInfo.Types
+			ArgCount = #PacketInfo.Types
 
-				BufferCheck1 = true
-			else
-				BufferCheck1 = false
-			end
-		end
-
-		-- detects if all args in the packet are a packet
-		for Index = 1, #Args do
-			if typeof(Args[Index]) == "buffer" then
-				BufferSizeCount += buffer.len(Args[Index])
-				VerifiedArgs += 1
-			else
-				break
-			end
-		end
-
-		-- Checks if all the args are verified
-		if VerifiedArgs == DetectedArgs and DetectedArgs == ArgCount and VerifiedArgs == ArgCount and BufferSizeCount <= MNSettings.MaxBufferSize then
-			BufferCheck2 = true
+			BufferCheck1 = true
 		else
-			BufferCheck2 = false
+			BufferCheck1 = false
 		end
+	end
 
-		-- Checks if the Packet passed all buffer checks
-		if BufferCheck1 and BufferCheck2 then
-			return true
+	-- detects if all args in the packet are a packet
+	for Index = 1, #Args do
+		if typeof(Args[Index]) == "buffer" then
+			BufferSizeCount += buffer.len(Args[Index])
+			VerifiedArgs += 1
 		else
-			return false
+			break
 		end
+	end
+
+	-- Checks if all the args are verified
+	if VerifiedArgs == DetectedArgs and DetectedArgs == ArgCount and VerifiedArgs == ArgCount and BufferSizeCount <= MNSettings.MaxBufferSize then
+		BufferCheck2 = true
+	else
+		BufferCheck2 = false
+	end
+
+	-- Checks if the Packet passed all buffer checks
+	if BufferCheck1 and BufferCheck2 then
+		return true
 	else
 		return false
 	end
@@ -165,18 +180,16 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 		local Remote = Instance.new("RemoteEvent")
 		Remote.Name = ReplicatorName
 		Remote.Parent = ReplicatorStorage
-		local LastTick = tick()
-		local _OldTickPerSecond = ReplicatorConfig.TickPerSecond
 
 		-- Reciver signal connection
 		ReplicatorObject.Receiver = Remote.OnServerEvent:Connect(function(Player: Player, ...: any)
-			local Success = PerformPacketIntegrityCheck(true, ...)
+			local Success = PerformPacketIntegrityCheck(...)
 
 			if Success then
 				-- Arguments
 				local Args = table.pack(...)
 				local Arg1 = Args[1] :: buffer
-				
+
 				-- Variables
 				local PacketId = buffer.readu8(Arg1, 0)
 				local Packet = ModNet.Packets[PacketId + 1]
@@ -186,7 +199,11 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 
 				print(Packet, PacketData)
 			else
-				Player:Kick("[ModNet][Integrity] - Pacekt failed to pass Integrity test.")
+				if not RunService:IsStudio() then
+					Player:Kick("[ModNet][Integrity] - Packet failed to pass Integrity test.")
+				else
+					warn("[ModNet][Integrity] - Integrity failure detected, check your packet data and types.")
+				end
 			end
 		end)
 
@@ -194,9 +211,8 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 		ReplicatorObject.Thread = ReplicatorInfo.StepMode:Connect(function(_DeltaTime: number)
 			for _ = 1, ReplicatorConfig.TickPerSecond do
 				if #ReplicatorObject.OutBoundQueue > 0 then
-					print(LastTick)
+					print("Out bound packet detected.")
 				else
-					LastTick = tick()
 					break
 				end
 			end
@@ -209,7 +225,6 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 end
 
 --[ ModNet Methods ]
-
 --[=[
 	Creates a new custom remote.
 		
@@ -266,3 +281,4 @@ function ModNet.GetPacket(Name: string)
 end
 
 return ModNet
+	

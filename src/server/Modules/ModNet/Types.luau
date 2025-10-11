@@ -1,3 +1,5 @@
+export type TypeSettings = { [string]: any }
+
 export type InternalPacket = {
 	Name: string,
 	PacketId: number,
@@ -5,6 +7,7 @@ export type InternalPacket = {
 	Reliable: boolean,
 	BlockedPlayers: { [number]: boolean },
 	Enabled: boolean,
+	Replicator: string,
 }
 
 export type EZNet = {
