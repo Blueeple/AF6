@@ -8,12 +8,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 -- Folders
-local ReplicatorRemoteStorage = Instance.new("Folder")
-ReplicatorRemoteStorage.Name = "ReplicatorRemoteStorage"
-ReplicatorRemoteStorage.Parent = ReplicatedStorage
+local ReplicatorStorage = Instance.new("Folder")
+ReplicatorStorage.Name = "ReplicatorStorage"
+ReplicatorStorage.Parent = ReplicatedStorage
 
 -- Variables
-local StartTick = tick()
 local ObjectEngine = {}
 local PlayersLoaded = {} :: { [Player]: boolean }
 
@@ -65,30 +64,20 @@ ObjectEngine = ModNet.Engine.PacketObjectEngine
 ]=]
 function ObjectEngine:Fire(Player: Player, ...)
 	-- Args
-	local ReplicatorObject = self :: { Packet: Types.InternalPacket, PacketId: number }
-	local PacketMemoryInfo = ReplicatorObject.Packet
+	local ReplicatorObject = self :: Types.InternalPacket
 
 	-- Variables
-	local ReplicatorName = PacketMemoryInfo.Replicator
-
-	local Replicator = ReplicatorRemoteStorage:FindFirstChild(ReplicatorName) :: RemoteEvent
+	local ReplicatorName = ReplicatorObject.Replicator
+	local Replicator = ReplicatorStorage:FindFirstChild(ReplicatorName) :: RemoteEvent
 	local _PackedData = table.pack(...)
 
-	if Replicator and Player:IsA("Player") then
-		print("[ModNet] - Firing packet: " .. PacketMemoryInfo.Name .. " using replicator: " .. ReplicatorName)
+	if Replicator and typeof(Player) == "Player" then
 		Replicator:FireClient(Player, buffer.create(1))
 	else
 		warn("[ModNet] - Client Fire error.")
 	end
-end
 
---[=[
-	Sets the activity of an remote.
-
-	@param ...
-]=]
-function ObjectEngine:SetEnabled(...)
-	print(self, ...)
+	print(self, Player, ...)
 end
 
 --[[ ModNet Internal ]]
@@ -109,9 +98,14 @@ local function RequestPacketByName(Name: string): (Types.InternalPacket?, number
 	return nil, nil
 end
 
+--[=[
+	Perfroms a integrity check on a packet
+
+	@param ...
+]=]
 local function PerformPacketIntegrityCheck(Player: Player, ...)
 	if PlayersLoaded[Player] ~= true then
-		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, Connection terminated.")
+		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, terminating connection.")
 		return false
 	end
 
@@ -195,7 +189,7 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 		local ReplicatorConfig = ModNet.Engine.Replicators[ReplicatorName]
 		local Remote = Instance.new("RemoteEvent")
 		Remote.Name = ReplicatorName
-		Remote.Parent = ReplicatorRemoteStorage
+		Remote.Parent = ReplicatorStorage
 
 		-- Reciver signal connection
 		ReplicatorObject.Receiver = Remote.OnServerEvent:Connect(function(Player: Player, ...: any)
@@ -224,7 +218,6 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 		end)
 
 		-- Thread connection
-		-- Bulk engine handler
 		ReplicatorObject.Thread = ReplicatorInfo.StepMode:Connect(function(_DeltaTime: number)
 			for _ = 1, ReplicatorConfig.TickPerSecond do
 				if #ReplicatorObject.OutBoundQueue > 0 then
@@ -237,7 +230,7 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 	else
 		local Remote = Instance.new("UnreliableRemoteEvent")
 		Remote.Name = ReplicatorName
-		Remote.Parent = ReplicatorRemoteStorage
+		Remote.Parent = ReplicatorStorage
 	end
 end
 
@@ -254,7 +247,6 @@ function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: str
 	-- Assertions
 	assert(not table.find(ModNet.Packets, Name), "Packet with this name already exists.")
 	assert(table.maxn(ModNet.Packets) <= 256, "Cannot create more than 256 packets.")
-	assert(ModNet.Engine.Replicators[Replicator], "Unable to find replicator with name: " .. Replicator)
 
 	-- Variables
 	local self = {}
@@ -291,13 +283,11 @@ function ModNet.GetPacket(Name: string)
 	self.Packet = Packet :: Types.InternalPacket
 	self.PacketId = PacketId :: number
 
-	return setmetatable(self, ObjectEngine) ::{ 
+	return setmetatable(self, ObjectEngine) :: {
 		Fire: (self: Types.PacketObjectEngine, Player: Player | { number: Player }, ...any) -> (),
 		Packet: Types.InternalPacket,
 		PacketId: number,
 	}
 end
-
-print("[ModNet][Engine] - " .. tostring(tick() - StartTick))
 
 return ModNet
