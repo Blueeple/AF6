@@ -35,6 +35,7 @@ local ServerInfo = {} :: ServerInfo
 --[[  ModNet-Binaries ]]
 ModNet.CreatePacket("MoneyGram", true, "QuickR", { ModNet.DataType.RBXUnCompressed, ModNet.DataType.Floatu8 })
 local PacketTest = ModNet.GetPacket("MoneyGram")
+PacketTest:SetEnabled(true)
 
 -- Requests for server data info
 repeat
@@ -74,5 +75,5 @@ until ServerInfo or IPRequestFailures >= MaxIpRetries
 
 Players.PlayerAdded:Connect(function(Player: Player)
 	task.wait(1)
-	PacketTest:Fire(Player, 100, 255.0)
+	PacketTest:Fire(Player, 0, 255)
 end)

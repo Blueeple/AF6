@@ -80,6 +80,15 @@ function ObjectEngine:Fire(Player: Player, ...)
 	print(self, Player, ...)
 end
 
+--[=[
+	Fires a function when ever a packet revices a signal
+
+	@param func: (...any) -> ()
+]=]
+function ObjectEngine.OnPacket(func: (...any) -> ())
+	print(func)
+end
+
 --[[ ModNet Internal ]]
 --[=[
 	Requests a packet by its name.
@@ -104,6 +113,7 @@ end
 	@param ...
 ]=]
 local function PerformPacketIntegrityCheck(Player: Player, ...)
+	-- Checks if the player has made a handshake to the server.
 	if PlayersLoaded[Player] ~= true then
 		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, terminating connection.")
 		return false
@@ -122,7 +132,7 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 	local BufferCheck1 = nil :: boolean?
 	local BufferCheck2 = nil :: boolean?
 
-	-- Check if the first argument is a buffer and has at least 1 byte
+	-- Check if the first argument is a buffer and has at least 1 byte.
 	if Args["n"] > 0 and typeof(Args[1]) == "buffer" then
 		local IdentifierPacket = Args[1]
 		local PacketId = buffer.readu8(IdentifierPacket, 0) + 1
@@ -139,7 +149,7 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 		end
 	end
 
-	-- detects if all args in the packet are a packet
+	-- detects if all args in the packet are a packet.
 	for Index = 1, #Args do
 		if typeof(Args[Index]) == "buffer" then
 			BufferSizeCount += buffer.len(Args[Index])
@@ -149,14 +159,14 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 		end
 	end
 
-	-- Checks if all the args are verified
+	-- Checks if all the args are verified.
 	if VerifiedArgs == DetectedArgs and DetectedArgs == ArgCount and VerifiedArgs == ArgCount and BufferSizeCount <= MNSettings.MaxBufferSize then
 		BufferCheck2 = true
 	else
 		BufferCheck2 = false
 	end
 
-	-- Checks if the Packet passed all buffer checks
+	-- Checks if the Packet passed all buffer checks.
 	if BufferCheck1 and BufferCheck2 then
 		return true
 	else
@@ -266,7 +276,7 @@ end
 	Gets a packet by its name.
 		
 	@param Name: string
-	@return PacketObjectEngine
+	
 ]=]
 function ModNet.GetPacket(Name: string)
 	-- Start variables
@@ -280,14 +290,10 @@ function ModNet.GetPacket(Name: string)
 	local self = {}
 
 	-- Packet Info
-	self.Packet = Packet :: Types.InternalPacket
+	self.PacketInfo = Packet :: Types.InternalPacket
 	self.PacketId = PacketId :: number
 
-	return setmetatable(self, ObjectEngine) :: {
-		Fire: (self: Types.PacketObjectEngine, Player: Player | { number: Player }, ...any) -> (),
-		Packet: Types.InternalPacket,
-		PacketId: number,
-	}
+	return setmetatable(self, ObjectEngine)
 end
 
 return ModNet

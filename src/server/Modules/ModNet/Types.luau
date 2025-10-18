@@ -1,3 +1,15 @@
+--!strict
+type Connection = {
+	Disconnect: (self: Connection) -> (),
+}
+
+type Signal = {
+	Connect: (self: Signal, callback: (...any) -> ()) -> Connection,
+	Once: (self: Signal, callback: (...any) -> ()) -> Connection,
+	Fire: (self: Signal, ...any) -> (),
+	Wait: (self: Signal) -> ...any,
+}
+
 export type TypeSettings = { [string]: any }
 
 export type InternalPacket = {
@@ -8,6 +20,7 @@ export type InternalPacket = {
 	BlockedPlayers: { [number]: boolean },
 	Enabled: boolean,
 	Replicator: string,
+	Signal: Signal,
 }
 
 export type EZNet = {
@@ -29,8 +42,28 @@ export type MN_Type = {
 }
 
 export type PacketObjectEngine = {
-	Fire: (self: PacketObjectEngine, Player: Player | { number: Player }, ...any) -> (),
-	Packet: InternalPacket,
+	--[=[
+		Fires a Pacekt to the client
+
+		@param Player: Player
+		@param ...
+	]=]
+	Fire: (self: PacketObjectEngine, Player: Player, ...any) -> (),
+
+	--[=[
+		Sets the activity of an remote.
+
+		@param ...
+	]=]
+	SetEnabled: (self: PacketObjectEngine, ...boolean) -> (),
+
+	--[=[
+		Fires a function when ever a packet revices a signal
+
+		@param func: (layer: Player, ...any) -> ()
+	]=]
+	OnPacket: (self: PacketObjectEngine, func: (Player: Player, ...any) -> ()) -> (),
+	PacketInfo: InternalPacket,
 	PacketId: number,
 }
 

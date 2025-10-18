@@ -65,8 +65,8 @@ ObjectEngine = ModNet.Engine.PacketObjectEngine
 ]=]
 function ObjectEngine:Fire(Player: Player, ...)
 	-- Args
-	local ReplicatorObject = self :: { Packet: Types.InternalPacket, PacketId: number }
-	local PacketMemoryInfo = ReplicatorObject.Packet
+	local ReplicatorObject = self :: { PacketInfo: Types.InternalPacket, PacketId: number }
+	local PacketMemoryInfo = ReplicatorObject.PacketInfo
 
 	-- Variables
 	local ReplicatorName = PacketMemoryInfo.Replicator
@@ -88,7 +88,26 @@ end
 	@param ...
 ]=]
 function ObjectEngine:SetEnabled(...)
-	print(self, ...)
+	assert(typeof(...) == "boolean", "Value must be boolean.")
+
+	-- Variables
+	local ReplicatorObject = self :: { PacketInfo: Types.InternalPacket, PacketId: number }
+	local PacketMemoryInfo = ReplicatorObject.PacketInfo
+
+	PacketMemoryInfo.Enabled = ...
+end
+
+--[=[
+	Fires a function when ever a packet revices a signal
+
+	@param func: (layer: Player, ...any) -> ()
+]=]
+function ObjectEngine:OnPacket(func: (Player: Player, ...any) -> ())
+	-- Variables
+	local ReplicatorObject = self :: { PacketInfo: Types.InternalPacket, PacketId: number }
+	local PacketMemoryInfo = ReplicatorObject.PacketInfo
+
+	PacketMemoryInfo.Signal:Connect(func)
 end
 
 --[[ ModNet Internal ]]
@@ -110,10 +129,12 @@ local function RequestPacketByName(Name: string): (Types.InternalPacket?, number
 end
 
 local function PerformPacketIntegrityCheck(Player: Player, ...)
+	-- Checks if the player has made a handshake to the server.
 	if PlayersLoaded[Player] ~= true then
-		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, Connection terminated.")
+		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, terminating connection.")
 		return false
 	end
+
 
 	-- Variables
 	local Args = table.pack(...)
@@ -128,6 +149,8 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 	local BufferCheck1 = nil :: boolean?
 	local BufferCheck2 = nil :: boolean?
 
+	local PacketInfo: Types.InternalPacket
+
 	-- Check if the first argument is a buffer and has at least 1 byte
 	if Args["n"] > 0 and typeof(Args[1]) == "buffer" then
 		local IdentifierPacket = Args[1]
@@ -135,7 +158,7 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 
 		-- Check if the packet with id exists
 		if ModNet.Packets[PacketId] then
-			local PacketInfo = ModNet.Packets[PacketId]
+			PacketInfo = ModNet.Packets[PacketId]
 
 			ArgCount = #PacketInfo.Types
 
@@ -156,7 +179,7 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 	end
 
 	-- Checks if all the args are verified
-	if VerifiedArgs == DetectedArgs and DetectedArgs == ArgCount and VerifiedArgs == ArgCount and BufferSizeCount <= MNSettings.MaxBufferSize then
+	if VerifiedArgs * 2 == (DetectedArgs + ArgCount) and DetectedArgs == ArgCount and BufferSizeCount <= MNSettings.MaxBufferSize and PacketInfo.Enabled then
 		BufferCheck2 = true
 	else
 		BufferCheck2 = false
@@ -218,7 +241,7 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 				if not RunService:IsStudio() then
 					Player:Kick("[ModNet][Integrity] - Packet failed to pass Integrity test.")
 				else
-					warn("[ModNet][Integrity] - Integrity failure detected, check your packet data and types.")
+					warn("[ModNet][Integrity] - Integrity failure detected, check your packet implementation.")
 				end
 			end
 		end)
@@ -252,7 +275,7 @@ end
 ]=]
 function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: string, TypesList: { Types.MN_Type })
 	-- Assertions
-	assert(not table.find(ModNet.Packets, Name), "Packet with this name already exists.")
+	assert(not RequestPacketByName(Name), "Packet with this name already exists.")
 	assert(table.maxn(ModNet.Packets) <= 256, "Cannot create more than 256 packets.")
 	assert(ModNet.Engine.Replicators[Replicator], "Unable to find replicator with name: " .. Replicator)
 
@@ -266,8 +289,6 @@ function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: str
 	self.Signal = GoodSignal.new()
 
 	ModNet.Packets[table.maxn(ModNet.Packets) + 1] = self :: Types.InternalPacket
-
-	return setmetatable(self, ModNet)
 end
 
 --[=[
@@ -288,14 +309,10 @@ function ModNet.GetPacket(Name: string)
 	local self = {}
 
 	-- Packet Info
-	self.Packet = Packet :: Types.InternalPacket
+	self.PacketInfo = Packet :: Types.InternalPacket
 	self.PacketId = PacketId :: number
 
-	return setmetatable(self, ObjectEngine) ::{ 
-		Fire: (self: Types.PacketObjectEngine, Player: Player | { number: Player }, ...any) -> (),
-		Packet: Types.InternalPacket,
-		PacketId: number,
-	}
+	return setmetatable(self, ObjectEngine) :: Types.PacketObjectEngine
 end
 
 print("[ModNet][Engine] - " .. tostring(tick() - StartTick))
