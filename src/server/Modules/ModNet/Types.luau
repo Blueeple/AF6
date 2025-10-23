@@ -12,10 +12,15 @@ type Signal = {
 
 export type TypeSettings = { [string]: any }
 
+export type MN_Type = {
+	Read: (...any) -> ...any,
+	Write: (...any) -> ...any,
+}
+
 export type InternalPacket = {
 	Name: string,
 	PacketId: number,
-	Types: { string },
+	Types: { any },
 	Reliable: boolean,
 	BlockedPlayers: { [number]: boolean },
 	Enabled: boolean,
@@ -36,11 +41,6 @@ export type Replicator = {
 	ThrottleInterval: number,
 }
 
-export type MN_Type = {
-	Read: (...any) -> ...any,
-	Write: (...any) -> ...any,
-}
-
 export type PacketObjectEngine = {
 	--[=[
 		Fires a Pacekt to the client
@@ -49,6 +49,11 @@ export type PacketObjectEngine = {
 		@param ...
 	]=]
 	Fire: (self: PacketObjectEngine, Player: Player, ...any) -> (),
+
+	--[=[
+		Fires an packet ot all client connected the rmv4.
+	]=]
+	FireAll: (...any) -> (),
 
 	--[=[
 		Sets the activity of an remote.
@@ -63,6 +68,16 @@ export type PacketObjectEngine = {
 		@param func: (layer: Player, ...any) -> ()
 	]=]
 	OnPacket: (self: PacketObjectEngine, func: (Player: Player, ...any) -> ()) -> (),
+
+	--[=[
+		Blocks a player from firing a packet.
+	]=]
+	BlockPlayer: (Player: Player) -> (),
+
+	--[=[
+		Allows a re blocked player to recived blocked packet.
+	]=]
+	UnBlockPlayer: (Player: Player) -> (),
 	PacketInfo: InternalPacket,
 	PacketId: number,
 }

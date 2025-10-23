@@ -33,7 +33,7 @@ local _DataBasePassword = "Deadfishxp64$DATABASE"
 local ServerInfo = {} :: ServerInfo
 
 --[[  ModNet-Binaries ]]
-ModNet.CreatePacket("MoneyGram", true, "QuickR", { ModNet.DataType.RBXUnCompressed, ModNet.DataType.Floatu8 })
+ModNet.CreatePacket("MoneyGram", true, "QuickR", { ModNet.DataType.IntU8 })
 local PacketTest = ModNet.GetPacket("MoneyGram")
 PacketTest:SetEnabled(true)
 
@@ -73,7 +73,7 @@ repeat
 	end
 until ServerInfo or IPRequestFailures >= MaxIpRetries
 
-Players.PlayerAdded:Connect(function(Player: Player)
-	task.wait(1)
-	PacketTest:Fire(Player, 0, 255)
+Players.PlayerAdded:Connect(function(_Player: Player)
+	task.wait(10)
+	PacketTest:FireAll(255)
 end)

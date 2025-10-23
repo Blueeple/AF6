@@ -25,7 +25,7 @@ local Types = require(script.Types)
 -- Object oriented module constructor
 local ModNet = {}
 ModNet.Packets = {} :: { [number]: Types.InternalPacket }
-ModNet.DataType = DataTypes
+ModNet.DataType = DataTypes.Types
 ModNet.Engine = {
 	Cached = {
 		Tables = {},
@@ -45,12 +45,17 @@ ModNet.Engine = {
 		[string]: {
 			Thread: RBXScriptConnection | {},
 			Receiver: RBXScriptConnection | {},
+			InBoundQueue: { [number]: { Player: Player, Buffer: buffer | any } },
 			OutBoundQueue: { [number]: { Player: Player, Buffer: buffer | any } },
 		},
 	},
 	PacketObjectEngine = {},
 	Settings = {
+		DebugMode = true,
+		BypassPacketIntegrity = false,
 		MaxBufferSize = 64,
+		ProcessPacketOnFire = false, -- Will be added in rmv4.1
+		SkipReplicatorOutboundQueue = false, -- Will be added in rmv4.1
 	},
 }
 ModNet.Engine.PacketObjectEngine.__index = ModNet.Engine.PacketObjectEngine
@@ -70,13 +75,51 @@ function ObjectEngine:Fire(Player: Player, ...)
 
 	-- Variables
 	local ReplicatorName = PacketMemoryInfo.Replicator
-
+	local OutBoundData = {}
 	local Replicator = ReplicatorRemoteStorage:FindFirstChild(ReplicatorName) :: RemoteEvent
-	local _PackedData = table.pack(...)
+	local PackedData = table.pack(...)
 
 	if Replicator and Player:IsA("Player") then
 		print("[ModNet] - Firing packet: " .. PacketMemoryInfo.Name .. " using replicator: " .. ReplicatorName)
-		Replicator:FireClient(Player, buffer.create(1))
+		for index, TypeName in PacketMemoryInfo.Types do
+			local Data = PackedData[index]
+			local WriteData = DataTypes.Writes[TypeName](Data)
+			OutBoundData[index] = WriteData
+		end
+
+		Replicator:FireClient(Player, table.unpack(OutBoundData))
+	else
+		warn("[ModNet] - Client Fire error.")
+	end
+end
+
+--[=[
+	Fires a Pacekt to all clients connected to the server.
+
+	@param ...
+]=]
+function ObjectEngine:FireAll(...)
+	-- Args
+	local ReplicatorObject = self :: { PacketInfo: Types.InternalPacket, PacketId: number }
+	local PacketMemoryInfo = ReplicatorObject.PacketInfo
+
+	-- Variables
+	local ReplicatorName = PacketMemoryInfo.Replicator
+	local OutBoundData = {}
+	local Replicator = ReplicatorRemoteStorage:FindFirstChild(ReplicatorName) :: RemoteEvent
+	local PackedData = table.pack(...) :: { [number]: any }
+
+	if Replicator then
+		print("[ModNet] - Firing packet: " .. PacketMemoryInfo.Name .. " using replicator: " .. ReplicatorName)
+		for index, TypeName in PacketMemoryInfo.Types do
+			local Data = PackedData[index]
+			local WriteData = DataTypes.Writes[TypeName](Data)
+			OutBoundData[index] = WriteData
+		end
+
+		for Player, _ in PlayersLoaded do
+			Replicator:FireClient(Player, table.unpack(OutBoundData))
+		end
 	else
 		warn("[ModNet] - Client Fire error.")
 	end
@@ -95,6 +138,51 @@ function ObjectEngine:SetEnabled(...)
 	local PacketMemoryInfo = ReplicatorObject.PacketInfo
 
 	PacketMemoryInfo.Enabled = ...
+end
+
+--[=[
+	Adds a player to the block list.
+
+	@param Player: Player
+]=]
+function ObjectEngine:BlockPlayer(Player: Player)
+	-- Packet Object data
+	local ReplicatorObject = self :: { PacketInfo: Types.InternalPacket, PacketId: number }
+	local PackedId = ReplicatorObject.PacketId
+	local PacketMemoryInfo = ReplicatorObject.PacketInfo
+
+	-- Variables
+	local Replicator = ReplicatorRemoteStorage:FindFirstChild(PacketMemoryInfo.Replicator) :: RemoteEvent
+	local Blocked_PID = buffer.create(1)
+
+	buffer.writeu8(Blocked_PID, 0, PackedId)
+
+	PacketMemoryInfo.BlockedPlayers[Player.UserId] = true
+	Replicator:FireServer(false, Blocked_PID)
+end
+
+--[=[
+	Removes a player from the block list.
+
+	@param Player: Player
+]=]
+function ObjectEngine:UnBlockPlayer(Player: Player)
+	-- Packet Object Data
+	local ReplicatorObject = self :: { PacketInfo: Types.InternalPacket, PacketId: number }
+	local PackedId = ReplicatorObject.PacketId
+	local PacketMemoryInfo = ReplicatorObject.PacketInfo
+
+	-- Variables
+	local Replicator = ReplicatorRemoteStorage:FindFirstChild(PacketMemoryInfo.Replicator) :: RemoteEvent
+	local UnBlocked_PID = buffer.create(1)
+
+	buffer.writeu8(UnBlocked_PID, 0, PackedId)
+
+	-- Checks if the player being unblocked exists, then unblocks
+	if PacketMemoryInfo.BlockedPlayers[Player.UserId] then
+		PacketMemoryInfo.BlockedPlayers[Player.UserId] = nil
+		Replicator:FireServer(false, UnBlocked_PID)
+	end
 end
 
 --[=[
@@ -128,17 +216,27 @@ local function RequestPacketByName(Name: string): (Types.InternalPacket?, number
 	return nil, nil
 end
 
+--[=[
+	Performs a Packet integrity check
+
+	@param Player: Player
+	@param ...any
+]=]
 local function PerformPacketIntegrityCheck(Player: Player, ...)
+	-- Engine
+	local EngineSettings = ModNet.Engine.Settings
+
 	-- Checks if the player has made a handshake to the server.
-	if PlayersLoaded[Player] ~= true then
+	if PlayersLoaded[Player] ~= true and not EngineSettings.DebugMode then
 		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, terminating connection.")
 		return false
+	elseif RunService:IsStudio() and EngineSettings.DebugMode and EngineSettings.BypassPacketIntegrity then
+		print("[ModNet][Integrity] - Packet proccessed under debug mode.")
+		return true
 	end
 
-
-	-- Variables
+	-- Core Variables
 	local Args = table.pack(...)
-	local MNSettings = ModNet.Engine.Settings
 
 	-- Variables
 	local ArgCount = 0 :: number
@@ -168,6 +266,12 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 		end
 	end
 
+	-- Checks if the player is blocked by the system.
+	if PacketInfo.BlockedPlayers[Player.UserId] then
+		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " player block bypass detected.")
+		return false
+	end
+
 	-- detects if all args in the packet are a packet
 	for Index = 1, #Args do
 		if typeof(Args[Index]) == "buffer" then
@@ -179,7 +283,7 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 	end
 
 	-- Checks if all the args are verified
-	if VerifiedArgs * 2 == (DetectedArgs + ArgCount) and DetectedArgs == ArgCount and BufferSizeCount <= MNSettings.MaxBufferSize and PacketInfo.Enabled then
+	if VerifiedArgs * 2 == (DetectedArgs + ArgCount) and DetectedArgs == ArgCount and BufferSizeCount <= EngineSettings.MaxBufferSize and PacketInfo.Enabled then
 		BufferCheck2 = true
 	else
 		BufferCheck2 = false
@@ -264,6 +368,9 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 	end
 end
 
+table.freeze(ModNet.Engine.ReplicatorHandlers)
+table.freeze(ModNet.Engine.Replicators)
+
 --[ ModNet Methods ]
 --[=[
 	Creates a new custom remote.
@@ -273,7 +380,7 @@ end
 	@param Channel: string
 	@param TypesList: { Types.EZN_Type }
 ]=]
-function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: string, TypesList: { Types.MN_Type })
+function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: string, TypesList: { any })
 	-- Assertions
 	assert(not RequestPacketByName(Name), "Packet with this name already exists.")
 	assert(table.maxn(ModNet.Packets) <= 256, "Cannot create more than 256 packets.")
@@ -286,9 +393,10 @@ function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: str
 	self.Unreliable = Unreliable
 	self.Replicator = Replicator
 	self.Types = TypesList
+	self.BlockedPlayers = {}
 	self.Signal = GoodSignal.new()
 
-	ModNet.Packets[table.maxn(ModNet.Packets) + 1] = self :: Types.InternalPacket
+	ModNet.Packets[table.maxn(ModNet.Packets) + 1] = self :: Types.InternalPacket & any
 end
 
 --[=[
@@ -312,7 +420,7 @@ function ModNet.GetPacket(Name: string)
 	self.PacketInfo = Packet :: Types.InternalPacket
 	self.PacketId = PacketId :: number
 
-	return setmetatable(self, ObjectEngine) :: Types.PacketObjectEngine
+	return setmetatable(self, ObjectEngine) :: Types.PacketObjectEngine & any
 end
 
 print("[ModNet][Engine] - " .. tostring(tick() - StartTick))
