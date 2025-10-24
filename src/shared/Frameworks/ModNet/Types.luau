@@ -1,13 +1,31 @@
+--!strict
+type Connection = {
+	Disconnect: (self: Connection) -> (),
+}
+
+type Signal = {
+	Connect: (self: Signal, callback: (...any) -> ()) -> Connection,
+	Once: (self: Signal, callback: (...any) -> ()) -> Connection,
+	Fire: (self: Signal, ...any) -> (),
+	Wait: (self: Signal) -> ...any,
+}
+
 export type TypeSettings = { [string]: any }
+
+export type MN_Type = {
+	Read: (...any) -> ...any,
+	Write: (...any) -> ...any,
+}
 
 export type InternalPacket = {
 	Name: string,
 	PacketId: number,
-	Types: { string },
+	Types: { any },
 	Reliable: boolean,
 	BlockedPlayers: { [number]: boolean },
 	Enabled: boolean,
 	Replicator: string,
+	Signal: Signal,
 }
 
 export type EZNet = {
@@ -23,14 +41,44 @@ export type Replicator = {
 	ThrottleInterval: number,
 }
 
-export type MN_Type = {
-	Read: (...any) -> ...any,
-	Write: (...any) -> ...any,
-}
-
 export type PacketObjectEngine = {
-	Fire: (self: PacketObjectEngine, Player: Player | { number: Player }, ...any) -> (),
-	Packet: InternalPacket,
+	--[=[
+		Fires a Pacekt to the client
+
+		@param Player: Player
+		@param ...
+	]=]
+	Fire: (self: PacketObjectEngine, Player: Player, ...any) -> (),
+
+	--[=[
+		Fires an packet ot all client connected the rmv4.
+	]=]
+	FireAll: (...any) -> (),
+
+	--[=[
+		Sets the activity of an remote.
+
+		@param ...
+	]=]
+	SetEnabled: (self: PacketObjectEngine, ...boolean) -> (),
+
+	--[=[
+		Fires a function when ever a packet revices a signal
+
+		@param func: (layer: Player, ...any) -> ()
+	]=]
+	OnPacket: (self: PacketObjectEngine, func: (Player: Player, ...any) -> ()) -> (),
+
+	--[=[
+		Blocks a player from firing a packet.
+	]=]
+	BlockPlayer: (Player: Player) -> (),
+
+	--[=[
+		Allows a re blocked player to recived blocked packet.
+	]=]
+	UnBlockPlayer: (Player: Player) -> (),
+	PacketInfo: InternalPacket,
 	PacketId: number,
 }
 

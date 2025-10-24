@@ -61,6 +61,15 @@ ModNet.Engine = {
 ModNet.Engine.PacketObjectEngine.__index = ModNet.Engine.PacketObjectEngine
 ObjectEngine = ModNet.Engine.PacketObjectEngine
 
+-- [[ Buffer Engine ]]
+local function PackBuffers(Table: { buffer })
+	print(Table)
+end
+
+local function _UnpackBuffers()
+	
+end
+
 -- [[ Object Engine Methods ]]
 --[=[
 	Fires a Pacekt to the client
@@ -86,6 +95,8 @@ function ObjectEngine:Fire(Player: Player, ...)
 			local WriteData = DataTypes.Writes[TypeName](Data)
 			OutBoundData[index] = WriteData
 		end
+
+		print(PackBuffers(OutBoundData))
 
 		Replicator:FireClient(Player, table.unpack(OutBoundData))
 	else
@@ -335,12 +346,12 @@ for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
 
 				-- Variables
 				local PacketId = buffer.readu8(Arg1, 0)
-				local Packet = ModNet.Packets[PacketId + 1]
+				local PacketMemoryInfo = ModNet.Packets[PacketId + 1]
 				local PacketData = buffer.create(buffer.len(Arg1) - 1)
 
 				buffer.copy(PacketData, 0, Arg1, 1, buffer.len(Arg1) - 1)
 
-				print(Packet, PacketData)
+				print(PacketMemoryInfo)
 			else
 				if not RunService:IsStudio() then
 					Player:Kick("[ModNet][Integrity] - Packet failed to pass Integrity test.")
