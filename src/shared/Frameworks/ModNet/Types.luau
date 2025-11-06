@@ -3,42 +3,19 @@ type Connection = {
 	Disconnect: (self: Connection) -> (),
 }
 
-type Signal = {
+export type Signal = {
 	Connect: (self: Signal, callback: (...any) -> ()) -> Connection,
 	Once: (self: Signal, callback: (...any) -> ()) -> Connection,
 	Fire: (self: Signal, ...any) -> (),
 	Wait: (self: Signal) -> ...any,
 }
 
-export type TypeSettings = { [string]: any }
-
-export type MN_Type = {
-	Read: (...any) -> ...any,
-	Write: (...any) -> ...any,
-}
-
 export type InternalPacket = {
 	Name: string,
 	PacketId: number,
 	Types: { any },
-	Reliable: boolean,
-	BlockedPlayers: { [number]: boolean },
-	Enabled: boolean,
 	Replicator: string,
 	Signal: Signal,
-}
-
-export type EZNet = {
-	Disconnect: (self: InternalPacket) -> (),
-}
-
-export type Replicator = {
-	StepMode: RBXScriptSignal,
-	Reliable: boolean,
-	TickPerSecond: number,
-	ThrottleEnabled: boolean,
-	ThrottleRate: number,
-	ThrottleInterval: number,
 }
 
 export type PacketObjectEngine = {
@@ -48,36 +25,13 @@ export type PacketObjectEngine = {
 		@param Player: Player
 		@param ...
 	]=]
-	Fire: (self: PacketObjectEngine, Player: Player, ...any) -> (),
-
-	--[=[
-		Fires an packet ot all client connected the rmv4.
-	]=]
-	FireAll: (...any) -> (),
-
-	--[=[
-		Sets the activity of an remote.
-
-		@param ...
-	]=]
-	SetEnabled: (self: PacketObjectEngine, ...boolean) -> (),
-
+	Fire: (self: PacketObjectEngine, ...any) -> (),
 	--[=[
 		Fires a function when ever a packet revices a signal
 
 		@param func: (layer: Player, ...any) -> ()
 	]=]
-	OnPacket: (self: PacketObjectEngine, func: (Player: Player, ...any) -> ()) -> (),
-
-	--[=[
-		Blocks a player from firing a packet.
-	]=]
-	BlockPlayer: (Player: Player) -> (),
-
-	--[=[
-		Allows a re blocked player to recived blocked packet.
-	]=]
-	UnBlockPlayer: (Player: Player) -> (),
+	OnPacket: (self: PacketObjectEngine, func: (...any) -> ()) -> { Disconnect: () -> () },
 	PacketInfo: InternalPacket,
 	PacketId: number,
 }

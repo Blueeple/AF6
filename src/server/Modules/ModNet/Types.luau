@@ -3,7 +3,7 @@ type Connection = {
 	Disconnect: (self: Connection) -> (),
 }
 
-type Signal = {
+export type Signal = {
 	Connect: (self: Signal, callback: (...any) -> ()) -> Connection,
 	Once: (self: Signal, callback: (...any) -> ()) -> Connection,
 	Fire: (self: Signal, ...any) -> (),
@@ -11,11 +11,6 @@ type Signal = {
 }
 
 export type TypeSettings = { [string]: any }
-
-export type MN_Type = {
-	Read: (...any) -> ...any,
-	Write: (...any) -> ...any,
-}
 
 export type InternalPacket = {
 	Name: string,
@@ -26,10 +21,6 @@ export type InternalPacket = {
 	Enabled: boolean,
 	Replicator: string,
 	Signal: Signal,
-}
-
-export type EZNet = {
-	Disconnect: (self: InternalPacket) -> (),
 }
 
 export type Replicator = {
@@ -67,17 +58,17 @@ export type PacketObjectEngine = {
 
 		@param func: (layer: Player, ...any) -> ()
 	]=]
-	OnPacket: (self: PacketObjectEngine, func: (Player: Player, ...any) -> ()) -> (),
+	OnPacket: (self: PacketObjectEngine, func: (Player: Player, ...any) -> ()) -> { Disconnect: () -> () },
 
 	--[=[
 		Blocks a player from firing a packet.
 	]=]
-	BlockPlayer: (Player: Player) -> (),
+	BlockPlayer: (self: PacketObjectEngine, Player: Player) -> (),
 
 	--[=[
 		Allows a re blocked player to recived blocked packet.
 	]=]
-	UnBlockPlayer: (Player: Player) -> (),
+	UnBlockPlayer: (self: PacketObjectEngine, Player: Player) -> (),
 	PacketInfo: InternalPacket,
 	PacketId: number,
 }

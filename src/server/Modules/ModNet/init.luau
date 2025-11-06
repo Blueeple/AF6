@@ -18,20 +18,25 @@ local ObjectEngine = {}
 local PlayersLoaded = {} :: { [Player]: boolean }
 
 -- Modules
-local DataTypes = require(ReplicatedStorage:WaitForChild("MN-Types"))
+local DataTypes = require(ReplicatedStorage:WaitForChild("EZN-Types"))
 local GoodSignal = require(ReplicatedStorage.Frameworks:WaitForChild("GoodSignal"))
 local Types = require(script.Types)
 
 -- Object oriented module constructor
-local ModNet = {}
-ModNet.Packets = {} :: { [number]: Types.InternalPacket }
-ModNet.DataType = DataTypes.Types
-ModNet.Engine = {
+local EZNet = {}
+EZNet.Packets = {} :: { [number]: Types.InternalPacket }
+EZNet.DataType = DataTypes.Types
+EZNet.Engine = {
 	Cached = {
 		Tables = {},
 		Arrays = {},
 	},
 	Replicators = {
+		PlayerVerify = {
+			StepMode = RunService.PostSimulation,
+			Reliable = true,
+			TickPerSecond = 1,
+		},
 		QuickR = {
 			StepMode = RunService.PreAnimation,
 			Reliable = true,
@@ -58,16 +63,68 @@ ModNet.Engine = {
 		SkipReplicatorOutboundQueue = false, -- Will be added in rmv4.1
 	},
 }
-ModNet.Engine.PacketObjectEngine.__index = ModNet.Engine.PacketObjectEngine
-ObjectEngine = ModNet.Engine.PacketObjectEngine
+EZNet.Engine.PacketObjectEngine.__index = EZNet.Engine.PacketObjectEngine
+ObjectEngine = EZNet.Engine.PacketObjectEngine
 
--- [[ Buffer Engine ]]
-local function PackBuffers(Table: { buffer })
-	print(Table)
+-- [[ Debug Engine]]
+--[=[
+	Debug print function
+
+	@param ...
+]=]
+local function DebugPrint(...)
+	if EZNet.Engine.Settings.DebugMode then
+		print(...)
+	end
 end
 
-local function _UnpackBuffers()
-	
+--[=[
+	Debug warn function
+
+	@param ...
+]=]
+local function DebugWarn(...)
+	if EZNet.Engine.Settings.DebugMode then
+		warn(...)
+	end
+end
+
+-- [[ Packet handling Engine ]]
+--[=[
+	Unpacks buffers from a single buffer
+
+	@param ...
+]=]
+local function HandleInBoundPacket(Player: Player, ...)
+	-- Variables
+	local PacketReciveData = table.pack(...)
+	local PacketId = nil :: number?
+	local PacketMemoryInfo = nil :: Types.InternalPacket?
+	local BufferTypesInfo = nil :: { [number]: string }?
+	local Signal = nil :: Types.Signal?
+	local InBoundData = {} :: { [number]: buffer }
+	local DecodedData = {} :: { [number]: any }
+
+	-- Converts all argument into tables
+	for index, Data: buffer in PacketReciveData do
+		InBoundData[index] = Data
+	end
+
+	-- Sets the packet ID and memory info
+	PacketId = buffer.readu8(PacketReciveData[1], 0) + 1
+	PacketMemoryInfo = EZNet.Packets[PacketId]
+	BufferTypesInfo = PacketMemoryInfo.Types
+	Signal = PacketMemoryInfo.Signal
+
+	-- Decodes all inbound data
+	for index, TypeName in BufferTypesInfo do
+		local BufferData = InBoundData[index + 1]
+		local ReadData = DataTypes.Reads[TypeName](BufferData)
+		DecodedData[index] = ReadData
+	end
+
+	-- Fires the decoded data to the signal
+	Signal:Fire(Player, table.unpack(DecodedData))
 end
 
 -- [[ Object Engine Methods ]]
@@ -87,20 +144,25 @@ function ObjectEngine:Fire(Player: Player, ...)
 	local OutBoundData = {}
 	local Replicator = ReplicatorRemoteStorage:FindFirstChild(ReplicatorName) :: RemoteEvent
 	local PackedData = table.pack(...)
+	local PacketId = ReplicatorObject.PacketId
 
 	if Replicator and Player:IsA("Player") then
-		print("[ModNet] - Firing packet: " .. PacketMemoryInfo.Name .. " using replicator: " .. ReplicatorName)
+		DebugPrint("[EZNet] - Firing packet: " .. PacketMemoryInfo.Name .. " using replicator: " .. ReplicatorName)
+
+		-- Packs the buffers into the packet
 		for index, TypeName in PacketMemoryInfo.Types do
 			local Data = PackedData[index]
 			local WriteData = DataTypes.Writes[TypeName](Data)
-			OutBoundData[index] = WriteData
+			OutBoundData[index + 1] = WriteData
 		end
 
-		print(PackBuffers(OutBoundData))
+		-- Adds Packet ID to the front of the buffer list
+		OutBoundData[1] = buffer.create(1)
+		buffer.writeu8(OutBoundData[1], 0, (PacketId - 1))
 
 		Replicator:FireClient(Player, table.unpack(OutBoundData))
 	else
-		warn("[ModNet] - Client Fire error.")
+		DebugWarn("[EZNet] - Client Fire error.")
 	end
 end
 
@@ -121,18 +183,23 @@ function ObjectEngine:FireAll(...)
 	local PackedData = table.pack(...) :: { [number]: any }
 
 	if Replicator then
-		print("[ModNet] - Firing packet: " .. PacketMemoryInfo.Name .. " using replicator: " .. ReplicatorName)
+		DebugPrint("[EZNet][Engine] - Firing packet: " .. PacketMemoryInfo.Name .. " using replicator: " .. ReplicatorName)
+
 		for index, TypeName in PacketMemoryInfo.Types do
 			local Data = PackedData[index]
 			local WriteData = DataTypes.Writes[TypeName](Data)
-			OutBoundData[index] = WriteData
+			OutBoundData[index + 1] = WriteData
 		end
+		
+		-- Adds Packet ID to the front of the buffer list
+		OutBoundData[1] = buffer.create(1)
+		buffer.writeu8(OutBoundData[1], 0, (ReplicatorObject.PacketId - 1))
 
 		for Player, _ in PlayersLoaded do
 			Replicator:FireClient(Player, table.unpack(OutBoundData))
 		end
 	else
-		warn("[ModNet] - Client Fire error.")
+		DebugWarn("[EZNet][Engine] - Client Fire error.")
 	end
 end
 
@@ -166,6 +233,7 @@ function ObjectEngine:BlockPlayer(Player: Player)
 	local Replicator = ReplicatorRemoteStorage:FindFirstChild(PacketMemoryInfo.Replicator) :: RemoteEvent
 	local Blocked_PID = buffer.create(1)
 
+	ReplicatorObject.PacketInfo.BlockedPlayers = {}
 	buffer.writeu8(Blocked_PID, 0, PackedId)
 
 	PacketMemoryInfo.BlockedPlayers[Player.UserId] = true
@@ -200,16 +268,22 @@ end
 	Fires a function when ever a packet revices a signal
 
 	@param func: (layer: Player, ...any) -> ()
+	@return { Disconnect: () -> () }
 ]=]
 function ObjectEngine:OnPacket(func: (Player: Player, ...any) -> ())
 	-- Variables
 	local ReplicatorObject = self :: { PacketInfo: Types.InternalPacket, PacketId: number }
 	local PacketMemoryInfo = ReplicatorObject.PacketInfo
+	local Connection = PacketMemoryInfo.Signal:Connect(func)
 
-	PacketMemoryInfo.Signal:Connect(func)
+		return {
+		Disconnect = function()
+			Connection:Disconnect()
+		end,
+	}
 end
 
---[[ ModNet Internal ]]
+--[[ EZNet Internal ]]
 --[=[
 	Requests a packet by its name.
 	
@@ -218,7 +292,7 @@ end
 	@return number?
 ]=]
 local function RequestPacketByName(Name: string): (Types.InternalPacket?, number?)
-	for Id, Packet in ModNet.Packets do
+	for Id, Packet in EZNet.Packets do
 		if Packet.Name == Name then
 			return Packet, Id
 		end
@@ -235,14 +309,14 @@ end
 ]=]
 local function PerformPacketIntegrityCheck(Player: Player, ...)
 	-- Engine
-	local EngineSettings = ModNet.Engine.Settings
+	local EngineSettings = EZNet.Engine.Settings
 
 	-- Checks if the player has made a handshake to the server.
 	if PlayersLoaded[Player] ~= true and not EngineSettings.DebugMode then
-		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, terminating connection.")
+		DebugWarn("[EZNet][Integrity] - Player: " .. Player.Name .. " fired an unverified event, terminating connection.")
 		return false
 	elseif RunService:IsStudio() and EngineSettings.DebugMode and EngineSettings.BypassPacketIntegrity then
-		print("[ModNet][Integrity] - Packet proccessed under debug mode.")
+		DebugPrint("[EZNet][Integrity] - Packet proccessed under debug mode.")
 		return true
 	end
 
@@ -250,9 +324,9 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 	local Args = table.pack(...)
 
 	-- Variables
-	local ArgCount = 0 :: number
+	local ArgCount = 0:: number
 	local DetectedArgs = #Args
-	local VerifiedArgs = 0
+	local VerifiedArgs = 0 :: number
 	local BufferSizeCount = 0 :: number
 
 	local BufferCheck1 = nil :: boolean?
@@ -266,10 +340,10 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 		local PacketId = buffer.readu8(IdentifierPacket, 0) + 1
 
 		-- Check if the packet with id exists
-		if ModNet.Packets[PacketId] then
-			PacketInfo = ModNet.Packets[PacketId]
+		if EZNet.Packets[PacketId] then
+			PacketInfo = EZNet.Packets[PacketId]
 
-			ArgCount = #PacketInfo.Types
+			ArgCount = #PacketInfo.Types + 1
 
 			BufferCheck1 = true
 		else
@@ -279,7 +353,7 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 
 	-- Checks if the player is blocked by the system.
 	if PacketInfo.BlockedPlayers[Player.UserId] then
-		warn("[ModNet][Integrity] - Player: " .. Player.Name .. " player block bypass detected.")
+		DebugWarn("[EZNet][Integrity] - Player: " .. Player.Name .. " player block bypass detected.")
 		return false
 	end
 
@@ -308,81 +382,148 @@ local function PerformPacketIntegrityCheck(Player: Player, ...)
 	end
 end
 
--- [[ Player Management ]]
-Players.PlayerRemoving:Connect(function(Player: Player)
-	if PlayersLoaded[Player] then
-		PlayersLoaded[Player] = nil
-	end
-end)
+--[=[
+	Initializes server Player manager EZNet components
+]=]
+local function InitializePlayerManager()
+	-- [[ Player binding ]]
+	Players.PlayerAdded:Connect(function(Player: Player)
+		coroutine.wrap(function()
+			task.wait(10)
 
--- [[ Replicator binding ]]
-for ReplicatorName, _ in ModNet.Engine.Replicators do
-	ModNet.Engine.ReplicatorHandlers[ReplicatorName] = {
-		Thread = {},
-		Receiver = {},
-		InBoundQueue = {},
-		OutBoundQueue = {},
-	}
+			if not PlayersLoaded[Player] then
+				Player:Kick("[EZNet][Verify] - Player loading took too long.")
+			end
+		end)()
+	end)
+
+	Players.PlayerRemoving:Connect(function(Player: Player)
+		if PlayersLoaded[Player] then
+			PlayersLoaded[Player] = nil
+		end
+	end)
 end
 
--- [[ Replicator Setup ]]
-for ReplicatorName, ReplicatorInfo in ModNet.Engine.Replicators do
-	if ReplicatorInfo.Reliable then
-		-- Variables
-		local ReplicatorObject = ModNet.Engine.ReplicatorHandlers[ReplicatorName]
-		local ReplicatorConfig = ModNet.Engine.Replicators[ReplicatorName]
-		local Remote = Instance.new("RemoteEvent")
-		Remote.Name = ReplicatorName
-		Remote.Parent = ReplicatorRemoteStorage
+--[=[
+	Initializes EZNet Replicator manager.
+]=]
+local function InitializeReplicatorManager()
+	-- [[ Replicator binding ]]
+	for ReplicatorName, _ in EZNet.Engine.Replicators do
+		EZNet.Engine.ReplicatorHandlers[ReplicatorName] = {
+			Thread = {},
+			Receiver = {},
+			InBoundQueue = {},
+			OutBoundQueue = {},
+		}
+	end
 
-		-- Reciver signal connection
-		ReplicatorObject.Receiver = Remote.OnServerEvent:Connect(function(Player: Player, ...: any)
-			local Success = PerformPacketIntegrityCheck(Player, ...)
+	-- [[ Replicator Setup ]]
+	for ReplicatorName, ReplicatorInfo in EZNet.Engine.Replicators do
+		if ReplicatorInfo.Reliable and ReplicatorName ~= "PlayerVerify" then
+			-- Variables
+			local ReplicatorObject = EZNet.Engine.ReplicatorHandlers[ReplicatorName]
+			--local ReplicatorConfig = EZNet.Engine.Replicators[ReplicatorName]
+			local Remote = Instance.new("RemoteEvent")
+			Remote.Name = ReplicatorName
+			Remote.Parent = ReplicatorRemoteStorage
 
-			if Success then
-				-- Arguments
-				local Args = table.pack(...)
-				local Arg1 = Args[1] :: buffer
+			-- Reciver signal connection
+			ReplicatorObject.Receiver = Remote.OnServerEvent:Connect(function(Player: Player, ...: any)
+				local Success = PerformPacketIntegrityCheck(Player, ...)
 
-				-- Variables
-				local PacketId = buffer.readu8(Arg1, 0)
-				local PacketMemoryInfo = ModNet.Packets[PacketId + 1]
-				local PacketData = buffer.create(buffer.len(Arg1) - 1)
-
-				buffer.copy(PacketData, 0, Arg1, 1, buffer.len(Arg1) - 1)
-
-				print(PacketMemoryInfo)
-			else
-				if not RunService:IsStudio() then
-					Player:Kick("[ModNet][Integrity] - Packet failed to pass Integrity test.")
+				if Success then
+					HandleInBoundPacket(Player, ...)
 				else
-					warn("[ModNet][Integrity] - Integrity failure detected, check your packet implementation.")
+					if not RunService:IsStudio() then
+						Player:Kick("[EZNet][Integrity] - Packet failed to pass Integrity test.")
+					else
+						DebugWarn("[EZNet][Integrity] - Integrity failure detected, check your packet implementation.")
+					end
 				end
-			end
-		end)
+			end)
 
-		-- Thread connection
-		-- Bulk engine handler
-		ReplicatorObject.Thread = ReplicatorInfo.StepMode:Connect(function(_DeltaTime: number)
-			for _ = 1, ReplicatorConfig.TickPerSecond do
-				if #ReplicatorObject.OutBoundQueue > 0 then
-					print("Out bound packet detected.")
-				else
-					break
+			-- Thread connection
+			-- Bulk engine handler
+			--[[
+			ReplicatorObject.Thread = ReplicatorInfo.StepMode:Connect(function(_DeltaTime: number)
+				for _ = 1, ReplicatorConfig.TickPerSecond do
+					if #ReplicatorObject.OutBoundQueue > 0 then
+						DebugPrint("Out bound packet detected.")
+					else
+						break
+					end
 				end
-			end
-		end)
-	else
-		local Remote = Instance.new("UnreliableRemoteEvent")
-		Remote.Name = ReplicatorName
-		Remote.Parent = ReplicatorRemoteStorage
+			end)
+			]]
+		elseif not ReplicatorInfo.Reliable and ReplicatorName ~= "PlayerVerify" then
+			local Remote = Instance.new("UnreliableRemoteEvent")
+			Remote.Name = ReplicatorName
+			Remote.Parent = ReplicatorRemoteStorage
+		elseif ReplicatorName == "PlayerVerify" then
+			-- Variables
+			local ReplicatorObject = EZNet.Engine.ReplicatorHandlers[ReplicatorName]
+			local ReplicatorConfig = EZNet.Engine.Replicators[ReplicatorName]
+			local Remote = Instance.new("RemoteEvent")
+			Remote.Name = ReplicatorName
+			Remote.Parent = ReplicatedStorage
+
+			-- Reciver signal connection
+			ReplicatorObject.Receiver = Remote.OnServerEvent:Connect(function(Player: Player)
+				if PlayersLoaded[Player] == nil then
+					DebugPrint("[EZNet][Verify] - Recieved Packet from: " .. Player.Name)
+
+					-- Variables
+					local PacketDataToSend = {}
+
+					for Id, PacketMemoryInfo in EZNet.Packets do
+						PacketDataToSend[Id] = {
+							Name = PacketMemoryInfo.Name,
+							Replicator = PacketMemoryInfo.Replicator,
+							Types = PacketMemoryInfo.Types,
+							PacketId = PacketMemoryInfo.PacketId,
+						}
+					end
+
+					if #PacketDataToSend > 0 then
+						Remote:FireClient(Player, PacketDataToSend)
+						PlayersLoaded[Player] = false
+						DebugPrint("[EZNet][Verify] - Sent packet data to player: " .. Player.Name)
+					else
+						DebugWarn("[EZNet][Verify] - No packet data to send to player: " .. Player.Name)
+					end
+				elseif PlayersLoaded[Player] == false then
+					PlayersLoaded[Player] = true
+					DebugPrint("[EZNet][Verify] - Player: " .. Player.Name .. " has been verified.")
+				else
+					Player:Kick("[EZNet][Verify] - Player re-verification detected, terminating connection.")
+					DebugWarn("[EZNet][Verify] - Player: " .. Player.Name .. " attempted to re-verify.")
+				end
+			end)
+
+			-- Thread connection
+			-- Bulk engine handler
+			ReplicatorObject.Thread = ReplicatorInfo.StepMode:Connect(function(_DeltaTime: number)
+				for _ = 1, ReplicatorConfig.TickPerSecond do
+					if #ReplicatorObject.OutBoundQueue > 0 then
+						DebugPrint("Outbound packet detected.")
+					else
+						break
+					end
+				end
+			end)
+		end
 	end
 end
 
-table.freeze(ModNet.Engine.ReplicatorHandlers)
-table.freeze(ModNet.Engine.Replicators)
+-- [[ EZNet Initialization ]]
+InitializePlayerManager()
+InitializeReplicatorManager()
 
---[ ModNet Methods ]
+table.freeze(EZNet.Engine.ReplicatorHandlers)
+table.freeze(EZNet.Engine.Replicators)
+
+--[ EZNet Methods ]
 --[=[
 	Creates a new custom remote.
 		
@@ -391,11 +532,12 @@ table.freeze(ModNet.Engine.Replicators)
 	@param Channel: string
 	@param TypesList: { Types.EZN_Type }
 ]=]
-function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: string, TypesList: { any })
+function EZNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: string, TypesList: { any })
 	-- Assertions
 	assert(not RequestPacketByName(Name), "Packet with this name already exists.")
-	assert(table.maxn(ModNet.Packets) <= 256, "Cannot create more than 256 packets.")
-	assert(ModNet.Engine.Replicators[Replicator], "Unable to find replicator with name: " .. Replicator)
+	assert(table.maxn(EZNet.Packets) <= 256, "Cannot create more than 256 packets.")
+	assert(EZNet.Engine.Replicators[Replicator], "Unable to find replicator with name: " .. Replicator)
+	assert(Replicator ~= "PlayerVerify", "The use of Replicator: 'PlayerVerify' is reserved for internal use.")
 
 	-- Variables
 	local self = {}
@@ -404,10 +546,12 @@ function ModNet.CreatePacket(Name: string, Unreliable: boolean?, Replicator: str
 	self.Unreliable = Unreliable
 	self.Replicator = Replicator
 	self.Types = TypesList
-	self.BlockedPlayers = {}
 	self.Signal = GoodSignal.new()
+	self.PacketId = table.maxn(EZNet.Packets) + 1
+	self.Enabled = true
+	self.BlockedPlayers = {} :: { [number]: boolean }
 
-	ModNet.Packets[table.maxn(ModNet.Packets) + 1] = self :: Types.InternalPacket & any
+	EZNet.Packets[table.maxn(EZNet.Packets) + 1] = self :: Types.InternalPacket
 end
 
 --[=[
@@ -416,12 +560,12 @@ end
 	@param Name: string
 	@return PacketObjectEngine
 ]=]
-function ModNet.GetPacket(Name: string)
+function EZNet.GetPacket(Name: string)
 	-- Start variables
 	local Packet, PacketId = RequestPacketByName(Name)
 
 	-- Assertions
-	assert(not table.find(ModNet.Packets, Name), "Packet with name " .. Name .. " does not exist.")
+	assert(not table.find(EZNet.Packets, Name), "Packet with name " .. Name .. " does not exist.")
 	assert(Packet, "Packet with this name: " .. Name .. " does not exist.")
 
 	-- Variables
@@ -431,9 +575,9 @@ function ModNet.GetPacket(Name: string)
 	self.PacketInfo = Packet :: Types.InternalPacket
 	self.PacketId = PacketId :: number
 
-	return setmetatable(self, ObjectEngine) :: Types.PacketObjectEngine & any
+	return setmetatable(self, ObjectEngine) :: Types.PacketObjectEngine
 end
 
-print("[ModNet][Engine] - " .. tostring(tick() - StartTick))
+DebugPrint("[EZNet][Engine] - " .. tostring(tick() - StartTick))
 
-return ModNet
+return EZNet

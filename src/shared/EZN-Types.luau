@@ -3,7 +3,6 @@
 -- [[ Standard luau buffer libary ]]
 local buffer = buffer
 
-
 -- [[ Rmv4 Engine Types ]]
 type AllocatableBuffer = {
 	Buffer: buffer,
@@ -72,7 +71,7 @@ local Writes = {}
 
 	Max length 0 -> 255 (256)
 ]=]
-Types.IntU8 = ( "IntU8" :: any ) :: number
+Types.IntU8 = ("IntU8" :: any) :: number
 Writes.IntU8 = function(Value: number)
 	local Pointer = BufferEngine.create()
 	Pointer:WriteBits(0, 8, Value)
@@ -81,6 +80,13 @@ end
 Reads.IntU8 = function(Value: buffer)
 	return buffer.readbits(Value, 0, 8)
 end
+
+--[=[
+	Weaphon Fire type.
+]=]
+Types.WeaphonFire = "WeaphonFire"
+Writes.WeaphonFire = function(Value: {}) end
+Reads.WeaphonFire = function(Value: buffer) end
 
 return {
 	Types = Types,

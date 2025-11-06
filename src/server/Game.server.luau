@@ -11,7 +11,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Modules = ServerScriptService.Modules
 
 -- Modules
-local ModNet = require(Modules.ModNet)
+local EZNet = require(Modules["EZNet-V2"])
 
 -- types
 type ServerInfo = {
@@ -32,10 +32,16 @@ local IpInfoURL = "https://ipinfo.io/json"
 local _DataBasePassword = "Deadfishxp64$DATABASE"
 local ServerInfo = {} :: ServerInfo
 
---[[  ModNet-Binaries ]]
-ModNet.CreatePacket("MoneyGram", true, "QuickR", { ModNet.DataType.IntU8 })
-local PacketTest = ModNet.GetPacket("MoneyGram")
+--[[  EZNet-Binaries ]]
+EZNet.CreatePacket("MoneyGram1", true, "QuickR", { EZNet.DataType.IntU8, EZNet.DataType.IntU8 })
+EZNet.CreatePacket("MoneyGram2", true, "QuickR", { EZNet.DataType.IntU8, EZNet.DataType.IntU8 })
+
+local PacketTest = EZNet.GetPacket("MoneyGram1")
 PacketTest:SetEnabled(true)
+
+PacketTest:OnPacket(function(Player: Player, Data1: number, Data2: number)
+	print("Received from player:", Player.Name, Data1, Data2)
+end)
 
 -- Requests for server data info
 repeat
@@ -75,5 +81,5 @@ until ServerInfo or IPRequestFailures >= MaxIpRetries
 
 Players.PlayerAdded:Connect(function(_Player: Player)
 	task.wait(10)
-	PacketTest:FireAll(255)
+	PacketTest:FireAll(255, 128)
 end)
